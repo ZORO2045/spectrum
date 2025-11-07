@@ -14,36 +14,24 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Set up JDK 8
+      - name: Set up JDK 11
         uses: actions/setup-java@v4
         with:
-          java-version: '8'
+          java-version: '11'
           distribution: 'temurin'
+          cache: gradle
 
-      - name: Replace build.gradle with updated version
+      - name: Update Gradle files
         run: |
-          cat > build.gradle << 'EOF'
-          buildscript {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-              dependencies {
-                  classpath 'com.android.tools.build:gradle:2.3.3'
-              }
-          }
-
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-
-          task clean(type: Delete) {
-              delete rootProject.buildDir
-          }
-          EOF
+          sed -i 's/jcenter()/google()\n        mavenCentral()/g' build.gradle
+          sed -i 's/com.android.tools.build:gradle:2.3.3/com.android.tools.build:gradle:4.2.2/g' build.gradle
+          sed -i 's/gradle-4.1-milestone-1/gradle-6.7.1/g' gradle/wrapper/gradle-wrapper.properties
+          sed -i 's/compileSdkVersion 25/compileSdkVersion 30/g' app/build.gradle
+          sed -i 's/buildToolsVersion "26.0.0"/buildToolsVersion "30.0.3"/g' app/build.gradle
+          sed -i 's/targetSdkVersion 25/targetSdkVersion 30/g' app/build.gradle
+          sed -i 's/compile /implementation /g' app/build.gradle
+          sed -i 's/testCompile /testImplementation /g' app/build.gradle
+          sed -i 's/androidTestCompile /androidTestImplementation /g' app/build.gradle
 
       - name: Grant execute permission for Gradle wrapper
         run: chmod +x gradlew
@@ -55,5 +43,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Spectrum-Release
-          path: app/build/outputs/apk/release/app-release.apk          name: Spectrum-Release
           path: app/build/outputs/apk/release/app-release.apk
