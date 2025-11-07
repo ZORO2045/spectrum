@@ -21,17 +21,35 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
+      - name: Create gradle.properties
+        run: |
+          echo "android.useAndroidX=true" > gradle.properties
+          echo "android.enableJetifier=true" >> gradle.properties
+
       - name: Update Gradle files
         run: |
           sed -i 's/jcenter()/google()\n        mavenCentral()/g' build.gradle
           sed -i 's/com.android.tools.build:gradle:2.3.3/com.android.tools.build:gradle:4.2.2/g' build.gradle
           sed -i 's/gradle-4.1-milestone-1/gradle-6.7.1/g' gradle/wrapper/gradle-wrapper.properties
+          
+          # Update app/build.gradle for AndroidX
           sed -i 's/compileSdkVersion 25/compileSdkVersion 30/g' app/build.gradle
           sed -i 's/buildToolsVersion "26.0.0"/buildToolsVersion "30.0.3"/g' app/build.gradle
           sed -i 's/targetSdkVersion 25/targetSdkVersion 30/g' app/build.gradle
+          sed -i 's/testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"/testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"/g' app/build.gradle
           sed -i 's/compile /implementation /g' app/build.gradle
           sed -i 's/testCompile /testImplementation /g' app/build.gradle
           sed -i 's/androidTestCompile /androidTestImplementation /g' app/build.gradle
+          
+          # Update dependencies to AndroidX
+          sed -i 's/com.android.support:appcompat-v7:28.0.0/androidx.appcompat:appcompat:1.3.1/g' app/build.gradle
+          sed -i 's/com.android.support:cardview-v7:28.0.0/androidx.cardview:cardview:1.0.0/g' app/build.gradle
+          sed -i 's/com.android.support:design:28.0.0/com.google.android.material:material:1.4.0/g' app/build.gradle
+          sed -i 's/com.android.support.test.espresso:espresso-core:2.2.2/androidx.test.espresso:espresso-core:3.3.0/g' app/build.gradle
+          sed -i 's/exclude group: .com.android.support., module: .support-annotations./exclude group: .androidx.test., module: .test-annotations./g' app/build.gradle
+          
+          # Add JitPack repository
+          sed -i '/mavenCentral()/a\        maven { url "https://jitpack.io" }' build.gradle
 
       - name: Grant execute permission for Gradle wrapper
         run: chmod +x gradlew
