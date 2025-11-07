@@ -51,19 +51,21 @@ jobs:
           # Add JitPack repository
           sed -i '/mavenCentral()/a\        maven { url "https://jitpack.io" }' build.gradle
 
-      - name: Update MainActivity.java imports
+      - name: Update ALL Java files to AndroidX
         run: |
-          sed -i 's/import android.support.annotation.NonNull;/import androidx.annotation.NonNull;/g' app/src/main/java/org/frap129/spectrum/MainActivity.java
-          sed -i 's/import android.support.v4.app.ActivityCompat;/import androidx.core.app.ActivityCompat;/g' app/src/main/java/org/frap129/spectrum/MainActivity.java
-          sed -i 's/import android.support.v4.content.ContextCompat;/import androidx.core.content.ContextCompat;/g' app/src/main/java/org/frap129/spectrum/MainActivity.java
-          sed -i 's/import android.support.v7.app.AppCompatActivity;/import androidx.appcompat.app.AppCompatActivity;/g' app/src/main/java/org/frap129/spectrum/MainActivity.java
-          sed -i 's/import android.support.v7.widget.CardView;/import androidx.cardview.widget.CardView;/g' app/src/main/java/org/frap129/spectrum/MainActivity.java
+          find app/src -name "*.java" -exec sed -i 's/import android.support.annotation.NonNull;/import androidx.annotation.NonNull;/g' {} \;
+          find app/src -name "*.java" -exec sed -i 's/import android.support.annotation.Nullable;/import androidx.annotation.Nullable;/g' {} \;
+          find app/src -name "*.java" -exec sed -i 's/import android.support.v4.app.ActivityCompat;/import androidx.core.app.ActivityCompat;/g' {} \;
+          find app/src -name "*.java" -exec sed -i 's/import android.support.v4.content.ContextCompat;/import androidx.core.content.ContextCompat;/g' {} \;
+          find app/src -name "*.java" -exec sed -i 's/import android.support.v7.app.AppCompatActivity;/import androidx.appcompat.app.AppCompatActivity;/g' {} \;
+          find app/src -name "*.java" -exec sed -i 's/import android.support.v7.widget.CardView;/import androidx.cardview.widget.CardView;/g' {} \;
+          find app/src -name "*.java" -exec sed -i 's/import android.support.v4.util.Pair;/import androidx.core.util.Pair;/g' {} \;
 
       - name: Grant execute permission for Gradle wrapper
         run: chmod +x gradlew
 
-      - name: Build APK (Release) with detailed output
-        run: ./gradlew assembleRelease --no-daemon --stacktrace --info
+      - name: Build APK (Release)
+        run: ./gradlew assembleRelease --no-daemon
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
