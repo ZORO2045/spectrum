@@ -20,19 +20,40 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
 
-      - name: Modify build.gradle to add google repository
+      - name: Replace build.gradle with updated version
         run: |
-          sed -i '/jcenter()/a\        google()' build.gradle
-          sed -i '/jcenter()/a\        mavenCentral()' build.gradle
+          cat > build.gradle << 'EOF'
+          buildscript {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:2.3.3'
+              }
+          }
+
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+
+          task clean(type: Delete) {
+              delete rootProject.buildDir
+          }
+          EOF
 
       - name: Grant execute permission for Gradle wrapper
         run: chmod +x gradlew
 
       - name: Build APK (Release)
-        run: ./gradlew assembleRelease
+        run: ./gradlew assembleRelease --no-daemon
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
           name: Spectrum-Release
+          path: app/build/outputs/apk/release/app-release.apk          name: Spectrum-Release
           path: app/build/outputs/apk/release/app-release.apk
