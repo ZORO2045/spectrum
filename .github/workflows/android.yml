@@ -19,7 +19,11 @@ jobs:
         with:
           java-version: '8'
           distribution: 'temurin'
-          cache: gradle
+
+      - name: Modify build.gradle to add google repository
+        run: |
+          sed -i '/jcenter()/a\        google()' build.gradle
+          sed -i '/jcenter()/a\        mavenCentral()' build.gradle
 
       - name: Grant execute permission for Gradle wrapper
         run: chmod +x gradlew
