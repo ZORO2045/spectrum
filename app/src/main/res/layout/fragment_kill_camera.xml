@@ -94,37 +94,6 @@
                     android:textStyle="bold"
                     android:gravity="center" />
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="16dp"
-                    android:background="@color/cardStroke" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Last checked: "
-                        android:textColor="#AAAAAA"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/tvLastChecked"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Just now"
-                        android:textColor="@color/colorAccent"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                </LinearLayout>
-
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
