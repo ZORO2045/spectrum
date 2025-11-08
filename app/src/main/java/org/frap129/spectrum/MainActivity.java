@@ -60,7 +60,10 @@ public class MainActivity extends AppCompatActivity {
                     tab.setText("CPU");
                     break;
                 case 3:
-                    tab.setText("ABOUT");
+                    tab.setText("Apps Manager");
+                    break;
+                case 4:
+                    tab.setText("About");
                     break;
             }
         }).attach();
@@ -79,8 +82,10 @@ public class MainActivity extends AppCompatActivity {
                 case 1:
                     return new DashboardFragment();
                 case 2:
-                    return new CpuFragment(); 
+                    return new CpuFragment();
                 case 3:
+                    return new AppsFragment();    
+                case 4:
                     return new AboutFragment(); 
                 default:
                     return new DashboardFragment();
