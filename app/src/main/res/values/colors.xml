@@ -11,6 +11,7 @@
     <color name="cardBackground">#302D38</color>
     <color name="cardStroke">#49454F</color>
     <color name="colorCamera">#FF6B6B</color>
+    <color name="tab_text_color">#FFFFFF</color>
     
     <!-- Chip Colors -->
     <color name="chip_background_color">#302D38</color>
