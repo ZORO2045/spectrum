@@ -21,11 +21,6 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Create gradle.properties
-        run: |
-          echo "android.useAndroidX=true" > gradle.properties
-          echo "android.enableJetifier=true" >> gradle.properties
-
       - name: Update Gradle files
         run: |
           sed -i 's/jcenter()/google()\n        mavenCentral()/g' build.gradle
