@@ -61,6 +61,11 @@
             android:layout_height="wrap_content"
             android:text="All Apps"
             android:checked="true"
+            app:chipBackgroundColor="@color/chip_background_color_selector"
+            app:textColor="@color/chip_text_color_selector"
+            app:chipStrokeColor="@color/chip_stroke_color_selector"
+            app:chipStrokeWidth="1dp"
+            app:checkedIconVisible="false"
             style="@style/Widget.MaterialComponents.Chip.Choice" />
 
         <com.google.android.material.chip.Chip
@@ -68,6 +73,11 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="System Apps"
+            app:chipBackgroundColor="@color/chip_background_color_selector"
+            app:textColor="@color/chip_text_color_selector"
+            app:chipStrokeColor="@color/chip_stroke_color_selector"
+            app:chipStrokeWidth="1dp"
+            app:checkedIconVisible="false"
             style="@style/Widget.MaterialComponents.Chip.Choice" />
 
         <com.google.android.material.chip.Chip
@@ -75,6 +85,11 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="User Apps"
+            app:chipBackgroundColor="@color/chip_background_color_selector"
+            app:textColor="@color/chip_text_color_selector"
+            app:chipStrokeColor="@color/chip_stroke_color_selector"
+            app:chipStrokeWidth="1dp"
+            app:checkedIconVisible="false"
             style="@style/Widget.MaterialComponents.Chip.Choice" />
 
         <com.google.android.material.chip.Chip
@@ -82,6 +97,11 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Disabled"
+            app:chipBackgroundColor="@color/chip_background_color_selector"
+            app:textColor="@color/chip_text_color_selector"
+            app:chipStrokeColor="@color/chip_stroke_color_selector"
+            app:chipStrokeWidth="1dp"
+            app:checkedIconVisible="false"
             style="@style/Widget.MaterialComponents.Chip.Choice" />
 
     </com.google.android.material.chip.ChipGroup>
