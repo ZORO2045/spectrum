@@ -71,7 +71,6 @@ public class MainActivity extends AppCompatActivity {
             super(fa);
         }
         
-        @NonNull
         @Override
         public Fragment createFragment(int position) {
             switch (position) {
