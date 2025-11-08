@@ -3,7 +3,7 @@
     <color name="colorPrimary">#1A1A1A</color>
     <color name="colorPrimaryDark">#1D1B20</color>
     <color name="splash_background">#141218</color>
-    <color name="colorAccent">#D0BCFF</color>
+    <color name="colorAccent">#B399FF</color>
     <color name="colorBalance">#4EA853</color>
     <color name="colorPerformance">#FFB02E</color>
     <color name="colorBattery">#3B82F6</color>
@@ -13,9 +13,9 @@
     
     <!-- Chip Colors -->
     <color name="chip_background_color">#302D38</color>
-    <color name="chip_background_checked">#D0BCFF</color>
+    <color name="chip_background_checked">#B399FF</color>
     <color name="chip_text_color">#E6E1E5</color>
     <color name="chip_text_checked">#1D1B20</color>
     <color name="chip_stroke_color">#49454F</color>
-    <color name="chip_stroke_checked">#D0BCFF</color>
+    <color name="chip_stroke_checked">#B399FF</color>
 </resources>
