@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimaryDark">#000000</color>
-    <color name="splash_background">#000000</color>
-    <color name="colorAccent">#00BCD4</color>
-    <color name="colorBalance">#43A047</color>
-    <color name="colorPerformance">#FB8C00</color>
-    <color name="colorBattery">#03A9F4</color>
-    <color name="colorGaming">#EF5350</color>
+    <color name="colorPrimaryDark">#1C1B1F</color>
+    <color name="splash_background">#141218</color>
+    <color name="colorAccent">#D0BCFF</color>
+    <color name="colorBalance">#4EA853</color>
+    <color name="colorPerformance">#FFB02E</color>
+    <color name="colorBattery">#3B82F6</color>
+    <color name="colorGaming">#EF4444</color>
 </resources>
