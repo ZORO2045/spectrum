@@ -8,207 +8,196 @@
     android:padding="16dp"
     tools:context=".ProfilesFragment">
 
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp">
 
-        <!-- Card 0 - Balance -->
+        <!-- Card 0 -->
         <androidx.cardview.widget.CardView
             android:id="@+id/card0"
             android:layout_width="match_parent"
-            android:layout_height="120dp"
-            android:layout_marginBottom="16dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
             android:clickable="true"
             style="@style/CardViewStyle"
             app:cardBackgroundColor="@color/cardBackground"
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
             app:strokeColor="@color/cardStroke"
-            app:strokeWidth="1dp">
+            app:strokeWidth="1dp"
+            app:contentPadding="18dp">
 
-            <RelativeLayout
+            <TextView
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="18dp">
+                android:layout_height="wrap_content"
+                android:text="@string/prof0"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/prof0"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="@android:color/white" />
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="end"
+                android:src="@drawable/atom"
+                android:tint="@android:color/white"/>
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_alignParentEnd="true"
-                    android:src="@drawable/atom"
-                    android:tint="@android:color/white"/>
-
-                <TextView
-                    android:id="@+id/desc0"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentBottom="true"
-                    android:layout_marginBottom="8dp"
-                    android:text="@string/profdesc0"
-                    android:textSize="14sp"
-                    android:textColor="#CCCCCC"
-                    android:gravity="start"/>
-
-            </RelativeLayout>
+            <TextView
+                android:id="@+id/desc0"
+                android:layout_marginTop="34dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/profdesc0"
+                android:textSize="14sp"
+                android:textColor="#CCCCCC"
+                android:gravity="bottom"/>
 
         </androidx.cardview.widget.CardView>
 
-        <!-- Card 1 - Performance -->
+        <!-- Card 1 -->
         <androidx.cardview.widget.CardView
             android:id="@+id/card1"
             android:layout_width="match_parent"
-            android:layout_height="120dp"
-            android:layout_marginBottom="16dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_centerHorizontal="true"
+            android:layout_below="@id/card0"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
             android:clickable="true"
             style="@style/CardViewStyle"
             app:cardBackgroundColor="@color/cardBackground"
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
             app:strokeColor="@color/cardStroke"
-            app:strokeWidth="1dp">
+            app:strokeWidth="1dp"
+            app:contentPadding="18dp">
 
-            <RelativeLayout
+            <TextView
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="18dp">
+                android:layout_height="wrap_content"
+                android:text="@string/prof1"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/prof1"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="@android:color/white" />
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="end"
+                android:src="@drawable/rocket"
+                android:tint="@android:color/white"/>
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_alignParentEnd="true"
-                    android:src="@drawable/rocket"
-                    android:tint="@android:color/white"/>
-
-                <TextView
-                    android:id="@+id/desc1"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentBottom="true"
-                    android:layout_marginBottom="8dp"
-                    android:text="@string/profdesc1"
-                    android:textSize="14sp"
-                    android:textColor="#CCCCCC"
-                    android:gravity="start"/>
-
-            </RelativeLayout>
+            <TextView
+                android:id="@+id/desc1"
+                android:layout_marginTop="34dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/profdesc1"
+                android:textSize="14sp"
+                android:textColor="#CCCCCC"
+                android:gravity="bottom"/>
 
         </androidx.cardview.widget.CardView>
 
-        <!-- Card 2 - Battery -->
+        <!-- Card 2 -->
         <androidx.cardview.widget.CardView
             android:id="@+id/card2"
             android:layout_width="match_parent"
-            android:layout_height="120dp"
-            android:layout_marginBottom="16dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_centerHorizontal="true"
+            android:layout_below="@id/card1"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
             android:clickable="true"
             style="@style/CardViewStyle"
             app:cardBackgroundColor="@color/cardBackground"
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
             app:strokeColor="@color/cardStroke"
-            app:strokeWidth="1dp">
+            app:strokeWidth="1dp"
+            app:contentPadding="18dp">
 
-            <RelativeLayout
+            <TextView
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="18dp">
+                android:layout_height="wrap_content"
+                android:text="@string/prof2"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/prof2"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="@android:color/white" />
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="end"
+                android:src="@drawable/battery"
+                android:tint="@android:color/white"/>
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_alignParentEnd="true"
-                    android:src="@drawable/battery"
-                    android:tint="@android:color/white"/>
-
-                <TextView
-                    android:id="@+id/desc2"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentBottom="true"
-                    android:layout_marginBottom="8dp"
-                    android:text="@string/profdesc2"
-                    android:textSize="14sp"
-                    android:textColor="#CCCCCC"
-                    android:gravity="start"/>
-
-            </RelativeLayout>
+            <TextView
+                android:id="@+id/desc2"
+                android:layout_marginTop="34dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/profdesc2"
+                android:textSize="14sp"
+                android:textColor="#CCCCCC"
+                android:gravity="bottom"/>
 
         </androidx.cardview.widget.CardView>
 
-        <!-- Card 3 - Gaming -->
+        <!-- Card 3 -->
         <androidx.cardview.widget.CardView
             android:id="@+id/card3"
             android:layout_width="match_parent"
-            android:layout_height="120dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
             android:layout_marginBottom="16dp"
+            android:layout_centerHorizontal="true"
+            android:layout_below="@id/card2"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
             android:clickable="true"
             style="@style/CardViewStyle"
             app:cardBackgroundColor="@color/cardBackground"
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
             app:strokeColor="@color/cardStroke"
-            app:strokeWidth="1dp">
+            app:strokeWidth="1dp"
+            app:contentPadding="18dp">
 
-            <RelativeLayout
+            <TextView
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="18dp">
+                android:layout_height="wrap_content"
+                android:text="@string/prof3"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/prof3"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="@android:color/white" />
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="end"
+                android:src="@drawable/game"
+                android:tint="@android:color/white"/>
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_alignParentEnd="true"
-                    android:src="@drawable/game"
-                    android:tint="@android:color/white"/>
-
-                <TextView
-                    android:id="@+id/desc3"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentBottom="true"
-                    android:layout_marginBottom="8dp"
-                    android:text="@string/profdesc3"
-                    android:textSize="14sp"
-                    android:textColor="#CCCCCC"
-                    android:gravity="start"/>
-
-            </RelativeLayout>
+            <TextView
+                android:id="@+id/desc3"
+                android:layout_marginTop="34dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/profdesc3"
+                android:textSize="14sp"
+                android:textColor="#CCCCCC"
+                android:gravity="bottom"/>
 
         </androidx.cardview.widget.CardView>
 
-    </LinearLayout>
-
+    </RelativeLayout>
 </androidx.core.widget.NestedScrollView>
