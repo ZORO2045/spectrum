@@ -21,33 +21,6 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Update Gradle files for AndroidX
-        run: |
-          sed -i 's/compileSdkVersion .*/compileSdkVersion 29/' app/build.gradle
-          sed -i 's/buildToolsVersion .*/buildToolsVersion "29.0.3"/' app/build.gradle
-          sed -i 's/targetSdkVersion .*/targetSdkVersion 25/' app/build.gradle
-          sed -i 's/testInstrumentationRunner .*/testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"/' app/build.gradle
-          sed -i 's/compile /implementation /g' app/build.gradle
-          sed -i 's/testCompile /testImplementation /g' app/build.gradle
-          sed -i 's/androidTestCompile /androidTestImplementation /g' app/build.gradle
-          
-          sed -i 's/com.android.support:appcompat-v7:.*/androidx.appcompat:appcompat:1.6.1/g' app/build.gradle
-          sed -i 's/com.android.support:cardview-v7:.*/androidx.cardview:cardview:1.0.0/g' app/build.gradle
-          sed -i 's/com.android.support:design:.*/com.google.android.material:material:1.9.0/g' app/build.gradle
-          sed -i 's/com.android.support.test.espresso:espresso-core:.*/androidx.test.espresso:espresso-core:3.5.0/g' app/build.gradle
-          
-          sed -i '/mavenCentral()/a\        maven { url "https://jitpack.io" }' build.gradle
-
-      - name: Update Java files to AndroidX
-        run: |
-          find app/src -name "*.java" -exec sed -i 's/import android.support.annotation.NonNull;/import androidx.annotation.NonNull;/g' {} \;
-          find app/src -name "*.java" -exec sed -i 's/import android.support.annotation.Nullable;/import androidx.annotation.Nullable;/g' {} \;
-          find app/src -name "*.java" -exec sed -i 's/import android.support.v4.app.ActivityCompat;/import androidx.core.app.ActivityCompat;/g' {} \;
-          find app/src -name "*.java" -exec sed -i 's/import android.support.v4.content.ContextCompat;/import androidx.core.content.ContextCompat;/g' {} \;
-          find app/src -name "*.java" -exec sed -i 's/import android.support.v7.app.AppCompatActivity;/import androidx.appcompat.app.AppCompatActivity;/g' {} \;
-          find app/src -name "*.java" -exec sed -i 's/import android.support.v7.widget.CardView;/import androidx.cardview.widget.CardView;/g' {} \;
-          find app/src -name "*.java" -exec sed -i 's/import android.support.v4.util.Pair;/import androidx.core.util.Pair;/g' {} \;
-
       - name: Grant execute permission for Gradle wrapper
         run: chmod +x gradlew
 
