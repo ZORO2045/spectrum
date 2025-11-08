@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -7,29 +8,23 @@
     android:fitsSystemWindows="true"
     tools:context="org.frap129.spectrum.MainActivity">
 
-    <android.support.v4.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        xmlns:tools="http://schemas.android.com/tools"
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
-        tools:context="org.frap129.spectrum.MainActivity"
         tools:showIn="@layout/activity_main">
 
         <RelativeLayout
-            xmlns:android="http://schemas.android.com/apk/res/android"
-            xmlns:app="http://schemas.android.com/apk/res-auto"
-            xmlns:tools="http://schemas.android.com/tools"
             android:id="@+id/activity_main"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:paddingLeft="@dimen/activity_horizontal_margin"
             android:paddingRight="@dimen/activity_horizontal_margin"
             android:paddingTop="@dimen/activity_vertical_margin"
-            android:paddingBottom="@dimen/activity_vertical_margin"
-            tools:context="org.frap129.spectrum.MainActivity">
+            android:paddingBottom="@dimen/activity_vertical_margin">
 
-            <android.support.v7.widget.CardView
+            <!-- Card 0 -->
+            <androidx.cardview.widget.CardView
                 android:id="@+id/card0"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -41,6 +36,7 @@
                 android:clickable="true"
                 app:cardElevation="@dimen/card_elevation"
                 app:contentPadding="18dp">
+
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -63,9 +59,10 @@
                     android:textAppearance="@android:style/TextAppearance.Material.Small"
                     android:gravity="bottom"/>
 
-            </android.support.v7.widget.CardView>
+            </androidx.cardview.widget.CardView>
 
-            <android.support.v7.widget.CardView
+            <!-- Card 1 -->
+            <androidx.cardview.widget.CardView
                 android:id="@+id/card1"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -77,6 +74,7 @@
                 android:clickable="true"
                 app:cardElevation="@dimen/card_elevation"
                 app:contentPadding="18dp">
+
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -99,9 +97,10 @@
                     android:textAppearance="@android:style/TextAppearance.Material.Small"
                     android:gravity="bottom"/>
 
-            </android.support.v7.widget.CardView>
+            </androidx.cardview.widget.CardView>
 
-            <android.support.v7.widget.CardView
+            <!-- Card 2 -->
+            <androidx.cardview.widget.CardView
                 android:id="@+id/card2"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -113,6 +112,7 @@
                 android:clickable="true"
                 app:cardElevation="@dimen/card_elevation"
                 app:contentPadding="18dp">
+
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -135,9 +135,10 @@
                     android:textAppearance="@android:style/TextAppearance.Material.Small"
                     android:gravity="bottom"/>
 
-            </android.support.v7.widget.CardView>
+            </androidx.cardview.widget.CardView>
 
-            <android.support.v7.widget.CardView
+            <!-- Card 3 -->
+            <androidx.cardview.widget.CardView
                 android:id="@+id/card3"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -150,6 +151,7 @@
                 android:clickable="true"
                 app:cardElevation="@dimen/card_elevation"
                 app:contentPadding="18dp">
+
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -172,8 +174,8 @@
                     android:textAppearance="@android:style/TextAppearance.Material.Small"
                     android:gravity="bottom"/>
 
-            </android.support.v7.widget.CardView>
+            </androidx.cardview.widget.CardView>
 
         </RelativeLayout>
-    </android.support.v4.widget.NestedScrollView>
-</android.support.design.widget.CoordinatorLayout>
+    </androidx.core.widget.NestedScrollView>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
