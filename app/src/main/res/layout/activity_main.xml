@@ -43,16 +43,13 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
-
-    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+ 
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabQuickApply"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
-        android:text="Apply Profile"
-        android:src="@drawable/ic_apply"
-        app:iconTint="@android:color/white"
         app:backgroundTint="@color/colorAccent"
         app:tint="@android:color/white"
         android:visibility="gone" />
