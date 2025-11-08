@@ -176,27 +176,23 @@
                     android:textStyle="bold"
                     android:textColor="@android:color/white" />
 
-                <com.google.android.material.button.MaterialButton
+                <Button
                     android:id="@+id/gpuPerformanceBtn"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:text="Performance Mode"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    app:strokeColor="@color/colorPerformance"
-                    app:strokeWidth="1dp"
-                    app:textColor="@color/colorPerformance" />
+                    android:backgroundTint="@color/colorPerformance"
+                    android:textColor="@android:color/white" />
 
-                <com.google.android.material.button.MaterialButton
+                <Button
                     android:id="@+id/gpuPowerSaveBtn"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="Power Save Mode"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    app:strokeColor="@color/colorBattery"
-                    app:strokeWidth="1dp"
-                    app:textColor="@color/colorBattery" />
+                    android:backgroundTint="@color/colorBattery"
+                    android:textColor="@android:color/white" />
 
             </LinearLayout>
 
