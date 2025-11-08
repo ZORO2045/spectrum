@@ -1,6 +1,9 @@
 package org.frap129.spectrum;
 
+import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.os.Environment;
 
 import java.io.BufferedReader;
@@ -141,5 +144,40 @@ class Utils {
 
     public static boolean supportsCustomDesc(){
         return new File(Environment.getExternalStorageDirectory() + File.separator +".spectrum_descriptions").exists();
+    }
+
+    // New methods for dialogs
+    public static void showNoSupportDialog(Context context) {
+        new AlertDialog.Builder(context)
+                .setTitle(context.getString(R.string.no_spectrum_support_dialog_title))
+                .setMessage(context.getString(R.string.no_spectrum_support_dialog_message))
+                .setCancelable(false)
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                        if (context instanceof Activity) {
+                            ((Activity) context).finish();
+                        }
+                    }
+                })
+                .show();
+    }
+
+    public static void showNoRootDialog(Context context) {
+        new AlertDialog.Builder(context)
+                .setTitle(context.getString(R.string.no_root_detected_dialog_title))
+                .setMessage(context.getString(R.string.no_root_detected_dialog_message))
+                .setCancelable(false)
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                        if (context instanceof Activity) {
+                            ((Activity) context).finish();
+                        }
+                    }
+                })
+                .show();
     }
 }
