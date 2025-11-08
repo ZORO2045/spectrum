@@ -60,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
                     tab.setText("CPU");
                     break;
                 case 3:
-                    tab.setText("GPU");
+                    tab.setText("ABOUT");
                     break;
             }
         }).attach();
@@ -81,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
                 case 2:
                     return new CpuFragment(); 
                 case 3:
-                    return new GpuFragment(); 
+                    return new AboutFragment(); 
                 default:
                     return new DashboardFragment();
             }
