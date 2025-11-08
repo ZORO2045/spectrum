@@ -13,6 +13,9 @@
         <!-- Material Components specific attributes -->
         <item name="materialButtonStyle">@style/Widget.MaterialComponents.Button</item>
         <item name="floatingActionButtonStyle">@style/Widget.MaterialComponents.FloatingActionButton</item>
+        
+        <!-- Overflow menu style -->
+        <item name="popupMenuStyle">@style/OverflowMenuStyle</item>
     </style>
 
     <style name="Splash.ActivityTheme" parent="Theme.AppCompat.NoActionBar">
@@ -28,6 +31,11 @@
         <item name="cardCornerRadius">16dp</item>
         <item name="cardUseCompatPadding">true</item>
         <item name="contentPadding">8dp</item>
+    </style>
+
+    <style name="OverflowMenuStyle" parent="Widget.AppCompat.PopupMenu">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:background">@color/colorPrimaryDark</item>
     </style>
 
 </resources>
