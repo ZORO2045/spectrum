@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -16,8 +17,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-
-import com.google.android.material.button.MaterialButton;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -34,7 +33,7 @@ public class GpuFragment extends Fragment {
     private TextView currentGpuGovernorText, gpuMinFreqText, gpuMaxFreqText, currentGpuFreqText;
     private TextView gpuVendorText, gpuModelText, gpuTempText;
     private SeekBar gpuFreqSeekBar;
-    private MaterialButton gpuPerformanceBtn, gpuPowerSaveBtn;
+    private Button gpuPerformanceBtn, gpuPowerSaveBtn;
 
     private Handler handler = new Handler(Looper.getMainLooper());
     private Runnable gpuMonitorRunnable;
@@ -434,4 +433,4 @@ public class GpuFragment extends Fragment {
             handler.removeCallbacks(gpuMonitorRunnable);
         }
     }
-    }
+}
