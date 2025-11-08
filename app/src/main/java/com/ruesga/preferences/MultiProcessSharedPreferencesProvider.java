@@ -15,6 +15,8 @@
  */
 package com.ruesga.preferences;
 
+import android.util.Pair;
+import androidx.annotation.Nullable;
 import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.content.Context;
