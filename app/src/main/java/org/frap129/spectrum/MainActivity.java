@@ -63,6 +63,9 @@ public class MainActivity extends AppCompatActivity {
                     tab.setText("Apps Manager");
                     break;
                 case 4:
+                tab.setText("Kill Camera");
+                    break;   
+                case 5:
                     tab.setText("About");
                     break;
             }
@@ -84,8 +87,10 @@ public class MainActivity extends AppCompatActivity {
                 case 2:
                     return new CpuFragment();
                 case 3:
-                    return new AppsFragment();    
+                    return new AppsFragment();
                 case 4:
+                    return new KillCameraFragment(); 
+                case 5:
                     return new AboutFragment(); 
                 default:
                     return new DashboardFragment();
@@ -94,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
         
         @Override
         public int getItemCount() {
-            return 5;
+            return 6;
         }
     }
 
