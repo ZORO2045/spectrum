@@ -63,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
                     tab.setText("Apps Manager");
                     break;
                 case 4:
-                tab.setText("Kill Camera");
+                    tab.setText("Kill Camera"); 
                     break;   
                 case 5:
                     tab.setText("About");
@@ -118,4 +118,4 @@ public class MainActivity extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
-            }
+        }
