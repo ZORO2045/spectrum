@@ -17,7 +17,7 @@
         <androidx.cardview.widget.CardView
             android:id="@+id/card0"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="120dp"
             android:layout_marginBottom="16dp"
             android:clickable="true"
             style="@style/CardViewStyle"
@@ -25,15 +25,15 @@
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
             app:strokeColor="@color/cardStroke"
-            app:strokeWidth="1dp"
-            app:contentPadding="18dp">
+            app:strokeWidth="1dp">
 
             <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="match_parent"
+                android:padding="18dp">
 
                 <TextView
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/prof0"
                     android:textSize="18sp"
@@ -51,8 +51,8 @@
                     android:id="@+id/desc0"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_below="@id/card0"
-                    android:layout_marginTop="8dp"
+                    android:layout_alignParentBottom="true"
+                    android:layout_marginBottom="8dp"
                     android:text="@string/profdesc0"
                     android:textSize="14sp"
                     android:textColor="#CCCCCC"
@@ -66,7 +66,7 @@
         <androidx.cardview.widget.CardView
             android:id="@+id/card1"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="120dp"
             android:layout_marginBottom="16dp"
             android:clickable="true"
             style="@style/CardViewStyle"
@@ -74,15 +74,15 @@
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
             app:strokeColor="@color/cardStroke"
-            app:strokeWidth="1dp"
-            app:contentPadding="18dp">
+            app:strokeWidth="1dp">
 
             <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="match_parent"
+                android:padding="18dp">
 
                 <TextView
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/prof1"
                     android:textSize="18sp"
@@ -100,8 +100,8 @@
                     android:id="@+id/desc1"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_below="@id/card1"
-                    android:layout_marginTop="8dp"
+                    android:layout_alignParentBottom="true"
+                    android:layout_marginBottom="8dp"
                     android:text="@string/profdesc1"
                     android:textSize="14sp"
                     android:textColor="#CCCCCC"
@@ -115,7 +115,7 @@
         <androidx.cardview.widget.CardView
             android:id="@+id/card2"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="120dp"
             android:layout_marginBottom="16dp"
             android:clickable="true"
             style="@style/CardViewStyle"
@@ -123,15 +123,15 @@
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
             app:strokeColor="@color/cardStroke"
-            app:strokeWidth="1dp"
-            app:contentPadding="18dp">
+            app:strokeWidth="1dp">
 
             <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="match_parent"
+                android:padding="18dp">
 
                 <TextView
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/prof2"
                     android:textSize="18sp"
@@ -149,8 +149,8 @@
                     android:id="@+id/desc2"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_below="@id/card2"
-                    android:layout_marginTop="8dp"
+                    android:layout_alignParentBottom="true"
+                    android:layout_marginBottom="8dp"
                     android:text="@string/profdesc2"
                     android:textSize="14sp"
                     android:textColor="#CCCCCC"
@@ -164,7 +164,7 @@
         <androidx.cardview.widget.CardView
             android:id="@+id/card3"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="120dp"
             android:layout_marginBottom="16dp"
             android:clickable="true"
             style="@style/CardViewStyle"
@@ -172,15 +172,15 @@
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
             app:strokeColor="@color/cardStroke"
-            app:strokeWidth="1dp"
-            app:contentPadding="18dp">
+            app:strokeWidth="1dp">
 
             <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="match_parent"
+                android:padding="18dp">
 
                 <TextView
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/prof3"
                     android:textSize="18sp"
@@ -198,8 +198,8 @@
                     android:id="@+id/desc3"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_below="@id/card3"
-                    android:layout_marginTop="8dp"
+                    android:layout_alignParentBottom="true"
+                    android:layout_marginBottom="8dp"
                     android:text="@string/profdesc3"
                     android:textSize="14sp"
                     android:textColor="#CCCCCC"
@@ -208,17 +208,6 @@
             </RelativeLayout>
 
         </androidx.cardview.widget.CardView>
-
-        <!-- Info Text -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Select a profile to apply kernel optimizations"
-            android:textSize="12sp"
-            android:textColor="#666666"
-            android:gravity="center"
-            android:padding="8dp" />
 
     </LinearLayout>
 
