@@ -7,4 +7,6 @@
     <color name="colorPerformance">#FFB74D</color>
     <color name="colorBattery">#42A5F5</color>
     <color name="colorGaming">#FF5252</color>
+    <color name="cardBackground">#2A2A2A</color>
+    <color name="cardStroke">#404040</color>
 </resources>
