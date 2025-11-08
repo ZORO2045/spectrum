@@ -10,15 +10,11 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import com.google.android.material.card.MaterialCardView;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
 
 public class KillCameraFragment extends Fragment {
 
     private Button btnKillCamera;
     private TextView tvStatus;
-    private TextView tvLastChecked;
     private MaterialCardView statusCard;
 
     @Nullable
@@ -36,7 +32,6 @@ public class KillCameraFragment extends Fragment {
     private void initViews(View view) {
         btnKillCamera = view.findViewById(R.id.btnKillCamera);
         tvStatus = view.findViewById(R.id.tvCameraStatus);
-        tvLastChecked = view.findViewById(R.id.tvLastChecked);
         statusCard = view.findViewById(R.id.statusCard);
     }
 
@@ -45,7 +40,6 @@ public class KillCameraFragment extends Fragment {
     }
 
     private void checkCameraStatus() {
-        updateLastCheckedTime();
         boolean isCameraRunning = Utils.isCameraServiceRunning(requireContext());
         
         if (isCameraRunning) {
@@ -55,12 +49,6 @@ public class KillCameraFragment extends Fragment {
             tvStatus.setText("Camera services are stopped");
             statusCard.setCardBackgroundColor(getResources().getColor(R.color.colorBalance));
         }
-    }
-
-    private void updateLastCheckedTime() {
-        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
-        String currentTime = sdf.format(new Date());
-        tvLastChecked.setText(currentTime);
     }
 
     private void killCameraProcess() {
@@ -78,4 +66,4 @@ public class KillCameraFragment extends Fragment {
             statusCard.setCardBackgroundColor(getResources().getColor(R.color.colorGaming));
         }
     }
-    }
+        }
