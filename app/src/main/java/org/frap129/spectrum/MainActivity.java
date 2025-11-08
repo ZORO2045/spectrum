@@ -1,6 +1,7 @@
 package org.frap129.spectrum;
 
 import android.os.Bundle;
+import android.os.Handler;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.viewpager2.widget.ViewPager2;
 import com.google.android.material.tabs.TabLayout;
@@ -63,13 +64,18 @@ public class MainActivity extends AppCompatActivity {
                     tab.setText("Apps Manager");
                     break;
                 case 4:
-                    tab.setText("Kill Camera"); 
+                    tab.setText("Kill Camera");
                     break;   
                 case 5:
                     tab.setText("About");
                     break;
             }
         }).attach();
+        
+        // Fix: Set initial page to Profiles after short delay
+        new Handler().postDelayed(() -> {
+            viewPager.setCurrentItem(0, false);
+        }, 50);
     }
 
     private static class ViewPagerAdapter extends FragmentStateAdapter {
@@ -118,4 +124,4 @@ public class MainActivity extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
-        }
+    }
