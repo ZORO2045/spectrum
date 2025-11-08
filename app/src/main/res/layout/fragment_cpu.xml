@@ -182,29 +182,25 @@
                     android:orientation="horizontal"
                     android:layout_marginTop="12dp">
 
-                    <com.google.android.material.button.MaterialButton
+                    <Button
                         android:id="@+id/enableAllCoresBtn"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginEnd="8dp"
                         android:text="Enable All"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        app:strokeColor="@color/colorAccent"
-                        app:strokeWidth="1dp"
-                        app:textColor="@color/colorAccent" />
+                        android:backgroundTint="@color/colorAccent"
+                        android:textColor="@android:color/white" />
 
-                    <com.google.android.material.button.MaterialButton
+                    <Button
                         android:id="@+id/disableAllCoresBtn"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginStart="8dp"
                         android:text="Disable All"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        app:strokeColor="#FF5252"
-                        app:strokeWidth="1dp"
-                        app:textColor="#FF5252" />
+                        android:backgroundTint="#FF5252"
+                        android:textColor="@android:color/white" />
 
                 </LinearLayout>
 
