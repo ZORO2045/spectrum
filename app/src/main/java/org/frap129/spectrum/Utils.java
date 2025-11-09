@@ -8,6 +8,7 @@ import android.content.DialogInterface;
 import android.os.Environment;
 import android.util.Log;
 import android.widget.Button;
+import androidx.core.content.ContextCompat;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -206,12 +207,16 @@ class Utils {
                     })
                     .create();
 
+            dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+                @Override
+                public void onShow(DialogInterface dialogInterface) {
+                    Button positiveButton = ((AlertDialog) dialogInterface).getButton(AlertDialog.BUTTON_POSITIVE);
+                    positiveButton.setTextColor(ContextCompat.getColor(context, R.color.colorAccent));
+                    positiveButton.setAllCaps(false);
+                }
+            });
+
             dialog.show();
-            
-            Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-            if (positiveButton != null) {
-                positiveButton.setAllCaps(false);
-            }
 
         } catch (Exception e) {
             Log.e(TAG, "Error showing no support dialog", e);
@@ -235,12 +240,16 @@ class Utils {
                     })
                     .create();
 
+            dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+                @Override
+                public void onShow(DialogInterface dialogInterface) {
+                    Button positiveButton = ((AlertDialog) dialogInterface).getButton(AlertDialog.BUTTON_POSITIVE);
+                    positiveButton.setTextColor(ContextCompat.getColor(context, R.color.colorAccent));
+                    positiveButton.setAllCaps(false);
+                }
+            });
+
             dialog.show();
-            
-            Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-            if (positiveButton != null) {
-                positiveButton.setAllCaps(false);
-            }
 
         } catch (Exception e) {
             Log.e(TAG, "Error showing no root dialog", e);
