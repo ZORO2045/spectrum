@@ -2,9 +2,9 @@ name: Android CI - Debug
 
 on:
   push:
-    branches: [ "a12+" ]
+    branches: [ "a12" ]
   pull_request:
-    branches: [ "a12+" ]
+    branches: [ "a12" ]
 
 jobs:
   build:
