@@ -25,13 +25,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         
-        // Setup toolbar
         setSupportActionBar(findViewById(R.id.toolbar));
         
-        // Setup ViewPager and Tabs
         setupViewPager();
         
-        // Check for Spectrum Support with error handling
         try {
             if (!Utils.checkSupport(this)) {
                 Utils.showNoSupportDialog(this);
@@ -42,7 +39,6 @@ public class MainActivity extends AppCompatActivity {
             showCompatibilityWarning();
         }
 
-        // Ensure root access with error handling
         try {
             if (!Utils.checkSU()) {
                 Utils.showNoRootDialog(this);
@@ -58,8 +54,7 @@ public class MainActivity extends AppCompatActivity {
         viewPager = findViewById(R.id.viewPager);
         tabLayout = findViewById(R.id.tabLayout);
         
-        // Keep all pages in memory to prevent reloading issues
-        viewPager.setOffscreenPageLimit(5); 
+        viewPager.setOffscreenPageLimit(5);
         
         ViewPagerAdapter adapter = new ViewPagerAdapter(this);
         viewPager.setAdapter(adapter);
@@ -87,7 +82,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }).attach();
         
-        // Fix: Set initial page to Profiles after short delay
         new Handler().postDelayed(() -> {
             try {
                 viewPager.setCurrentItem(0, false);
@@ -123,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             } catch (Exception e) {
                 Log.e("ViewPagerAdapter", "Error creating fragment for position: " + position, e);
-                return new DashboardFragment(); // Fallback fragment
+                return new DashboardFragment();
             }
         }
         
@@ -186,9 +180,5 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Clean up handlers to prevent memory leaks
-        if (handler != null) {
-            handler.removeCallbacksAndMessages(null);
-        }
     }
-}
+    }
