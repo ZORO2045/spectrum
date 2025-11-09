@@ -69,7 +69,7 @@ public class MainActivity extends AppCompatActivity {
                     tab.setText("Profiles");
                     break;
                 case 1:
-                    tab.setText("Monitor");
+                    tab.setText("Disk Info");
                     break;
                 case 2:
                     tab.setText("CPU");
@@ -107,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
                     case 0:
                         return new ProfilesFragment(); 
                     case 1:
-                        return new DashboardFragment();
+                        return new PartitionsFragment();
                     case 2:
                         return new CpuFragment();
                     case 3:
