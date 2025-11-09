@@ -7,6 +7,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Environment;
 import android.util.Log;
+import android.widget.Button;
+import androidx.core.content.ContextCompat;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -201,7 +203,7 @@ class Utils {
     // New methods for dialogs
     public static void showNoSupportDialog(Context context) {
         try {
-            new AlertDialog.Builder(context)
+            AlertDialog dialog = new AlertDialog.Builder(context, R.style.SpectrumDialogTheme)
                     .setTitle(context.getString(R.string.no_spectrum_support_dialog_title))
                     .setMessage(context.getString(R.string.no_spectrum_support_dialog_message))
                     .setCancelable(false)
@@ -214,7 +216,18 @@ class Utils {
                             }
                         }
                     })
-                    .show();
+                    .create();
+
+            dialog.show();
+            
+            // Customize the OK button
+            Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            if (positiveButton != null) {
+                positiveButton.setTextColor(ContextCompat.getColor(context, android.R.color.black));
+                positiveButton.setAllCaps(false);
+                positiveButton.setTextSize(16);
+            }
+
         } catch (Exception e) {
             Log.e(TAG, "Error showing no support dialog", e);
         }
@@ -222,7 +235,7 @@ class Utils {
 
     public static void showNoRootDialog(Context context) {
         try {
-            new AlertDialog.Builder(context)
+            AlertDialog dialog = new AlertDialog.Builder(context, R.style.SpectrumDialogTheme)
                     .setTitle(context.getString(R.string.no_root_detected_dialog_title))
                     .setMessage(context.getString(R.string.no_root_detected_dialog_message))
                     .setCancelable(false)
@@ -235,7 +248,18 @@ class Utils {
                             }
                         }
                     })
-                    .show();
+                    .create();
+
+            dialog.show();
+            
+            // Customize the OK button
+            Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            if (positiveButton != null) {
+                positiveButton.setTextColor(ContextCompat.getColor(context, android.R.color.black));
+                positiveButton.setAllCaps(false);
+                positiveButton.setTextSize(16);
+            }
+
         } catch (Exception e) {
             Log.e(TAG, "Error showing no root dialog", e);
         }
@@ -420,4 +444,4 @@ class ShellUtils {
             return new CommandResult("", e.getMessage(), -1);
         }
     }
-    }
+}
