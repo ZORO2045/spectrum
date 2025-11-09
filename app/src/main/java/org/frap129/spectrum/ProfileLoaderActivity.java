@@ -37,6 +37,7 @@ import static java.lang.System.in;
 public class ProfileLoaderActivity extends AppCompatActivity{
     private static final int SELECT_FILE = 1;
     static final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 1;
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,15 +45,7 @@ public class ProfileLoaderActivity extends AppCompatActivity{
 
         CardView fileSelect = (CardView) findViewById(R.id.profCard);
         final Switch applyOnBoot = (Switch) findViewById(R.id.boot);
-        SharedPreferences first = this.getSharedPreferences("firstFind", Context.MODE_PRIVATE);
-        SharedPreferences.Editor feditor = first.edit();
         SharedPreferences boot = getApplication().getSharedPreferences("loadOnBoot", Context.MODE_PRIVATE);
-
-        if (first.getBoolean("firstFind", true)) {
-            aboutDialog();
-            feditor.putBoolean("firstFind", false);
-            feditor.apply();
-        }
 
         applyOnBoot.setChecked(boot.getBoolean("loadOnBoot", false));
 
@@ -91,7 +84,6 @@ public class ProfileLoaderActivity extends AppCompatActivity{
         });
     }
 
-    // Method that parses profile file
     public static void setEXKMProfile(final String path) {
         new AsyncTask<Object, Object, Void>() {
             @Override
@@ -119,17 +111,6 @@ public class ProfileLoaderActivity extends AppCompatActivity{
         }.execute();
     }
 
-    // Method that creates intro dialog
-    private void aboutDialog() {
-        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-        dialog.setTitle(R.string.aboutLoader);
-        dialog.setMessage(R.string.loaderDesc);
-        dialog.setCancelable(true);
-        AlertDialog supportDialog = dialog.create();
-        supportDialog.show();
-    }
-
-    // Method that sets property as a string
     private void setProp(final String profile) {
         new AsyncTask<Object, Object, Void>() {
             @Override
@@ -140,7 +121,6 @@ public class ProfileLoaderActivity extends AppCompatActivity{
         }.execute();
     }
 
-    // Method that prompts the user for confirmation
     protected void profileDialog(final String path){
         final Dialog pDialog = new Dialog(ProfileLoaderActivity.this);
         pDialog.setTitle("Profile Loader");
@@ -172,11 +152,8 @@ public class ProfileLoaderActivity extends AppCompatActivity{
         pDialog.show();
     }
 
-    // File path methods taken from aFileChooser, thanks to iPaulPro: https://github.com/iPaulPro/aFileChooser
     public static String getPath(final Context context, final Uri uri) {
-        // DocumentProvider
         if (DocumentsContract.isDocumentUri(context, uri)) {
-            // ExternalStorageProvider
             if (isExternalStorageDocument(uri)) {
                 final String docId = DocumentsContract.getDocumentId(uri);
                 final String[] split = docId.split(":");
@@ -186,7 +163,6 @@ public class ProfileLoaderActivity extends AppCompatActivity{
                     return Environment.getExternalStorageDirectory() + "/" + split[1];
 
             }
-            // DownloadsProvider
             else if (isDownloadsDocument(uri)) {
 
                 final String id = DocumentsContract.getDocumentId(uri);
@@ -195,7 +171,6 @@ public class ProfileLoaderActivity extends AppCompatActivity{
 
                 return getDataColumn(context, contentUri, null, null);
             }
-            // MediaProvider
             else if (isMediaDocument(uri)) {
                 final String docId = DocumentsContract.getDocumentId(uri);
                 final String[] split = docId.split(":");
@@ -217,10 +192,8 @@ public class ProfileLoaderActivity extends AppCompatActivity{
                 return getDataColumn(context, contentUri, selection, selectionArgs);
             }
         }
-        // MediaStore (and general)
         else if ("content".equalsIgnoreCase(uri.getScheme()))
             return getDataColumn(context, uri, null, null);
-            // File
         else if ("file".equalsIgnoreCase(uri.getScheme()))
             return uri.getPath();
 
@@ -266,11 +239,8 @@ public class ProfileLoaderActivity extends AppCompatActivity{
     public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
         switch (requestCode) {
             case MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE: {
-                // If request is cancelled, the result arrays are empty.
                 if (grantResults.length <= 0
                         && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
                     Toast.makeText(ProfileLoaderActivity.this, "Read permissions are required to run this app.", Toast.LENGTH_LONG).show();
                 }
                 else{
@@ -281,7 +251,6 @@ public class ProfileLoaderActivity extends AppCompatActivity{
         }
     }
 
-    //Thanks: http://codetheory.in/android-pick-select-image-from-gallery-with-intents/
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK) {
@@ -296,5 +265,4 @@ public class ProfileLoaderActivity extends AppCompatActivity{
             }
         }
     }
-
 }
