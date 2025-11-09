@@ -9,16 +9,11 @@
         <item name="android:navigationBarColor">@color/colorPrimaryDark</item>
         <item name="android:statusBarColor">@color/colorPrimaryDark</item>
         <item name="android:textColorPrimary">@android:color/white</item>
-        
-        <!-- Material Components specific attributes -->
         <item name="materialButtonStyle">@style/Widget.MaterialComponents.Button</item>
         <item name="floatingActionButtonStyle">@style/Widget.MaterialComponents.FloatingActionButton</item>
-        
-        <!-- Overflow menu style -->
         <item name="popupMenuStyle">@style/OverflowMenuStyle</item>
     </style>
 
-    <!-- Spectrum Dialog Themes -->
     <style name="SpectrumDialogTheme" parent="Theme.MaterialComponents.DayNight.Dialog.Alert">
         <item name="android:windowBackground">@drawable/dialog_background</item>
         <item name="buttonBarPositiveButtonStyle">@style/SpectrumDialogButton</item>
@@ -52,9 +47,16 @@
         <item name="contentPadding">8dp</item>
     </style>
 
-    <style name="OverflowMenuStyle" parent="Widget.AppCompat.PopupMenu">
+    <style name="OverflowMenuStyle" parent="Widget.MaterialComponents.PopupMenu.Overflow">
         <item name="android:textColor">@android:color/white</item>
-        <item name="android:background">@color/colorPrimaryDark</item>
+        <item name="android:background">@color/cardBackground</item>
+        <item name="android:popupBackground">@color/cardBackground</item>
+        <item name="android:dropDownListViewStyle">@style/MenuListViewStyle</item>
+    </style>
+
+    <style name="MenuListViewStyle" parent="Widget.AppCompat.ListView.DropDown">
+        <item name="android:listSelector">@color/colorAccent</item>
+        <item name="android:background">@color/cardBackground</item>
     </style>
 
 </resources>
