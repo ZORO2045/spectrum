@@ -5,8 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp"
-    android:weightSum="1"
-    android:background="?android:attr/windowBackground">
+    android:background="@color/colorPrimaryDark">
 
     <androidx.cardview.widget.CardView
         android:id="@+id/profCard"
@@ -16,6 +15,7 @@
         android:clickable="true"
         app:cardCornerRadius="12dp"
         app:cardElevation="8dp"
+        app:cardBackgroundColor="@color/cardBackground"
         app:contentPadding="18dp">
 
         <TextView
@@ -24,7 +24,7 @@
             android:gravity="center"
             android:text="@string/fileSelect"
             android:textAppearance="@style/TextAppearance.AppCompat.Large"
-            android:textColor="@android:color/black"
+            android:textColor="@android:color/white"
             android:textStyle="bold" />
     </androidx.cardview.widget.CardView>
 
@@ -36,6 +36,7 @@
         android:clickable="true"
         app:cardCornerRadius="12dp"
         app:cardElevation="6dp"
+        app:cardBackgroundColor="@color/cardBackground"
         app:contentPadding="16dp">
 
         <Switch
@@ -44,7 +45,7 @@
             android:layout_height="wrap_content"
             android:text="@string/bootText"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-            android:textColor="@android:color/black" />
+            android:textColor="@android:color/white" />
     </androidx.cardview.widget.CardView>
 
 </LinearLayout>
