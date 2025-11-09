@@ -8,14 +8,11 @@ import android.content.DialogInterface;
 import android.os.Environment;
 import android.util.Log;
 import android.widget.Button;
-import androidx.core.content.ContextCompat;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.List;
-
 import eu.chainfire.libsuperuser.Shell;
 
 class Utils {
@@ -35,13 +32,11 @@ class Utils {
     public static String finalGov;
     public static String cpuScalingGovernorPath = "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor";
 
-    // Method to check if kernel supports
     public static boolean checkSupport(final Context context) {
         try {
             List<String> shResult;
             String supportProp = "spectrum.support";
             
-            // Safe shell command execution
             shResult = safeShellRun(String.format("getprop %s", supportProp), false);
             
             if (listToString(shResult).isEmpty()) {
@@ -65,7 +60,6 @@ class Utils {
         }
     }
 
-    // Safe shell command execution with null checks
     private static List<String> safeShellRun(String command, boolean useRoot) {
         try {
             if (useRoot && !Shell.SU.available()) {
@@ -79,7 +73,6 @@ class Utils {
         }
     }
 
-    // Method to check if the device is rooted
     public static boolean checkSU() {
         try {
             return Shell.SU.available();
@@ -89,7 +82,6 @@ class Utils {
         }
     }
 
-    // Method that converts List<String> to String with null safety
     public static String listToString(List<String> list) {
         if (list == null || list.isEmpty()) {
             return "";
@@ -103,7 +95,6 @@ class Utils {
         return Builder.toString();
     }
 
-    // Method that interprets a profile and sets it
     public static void setProfile(int profile) {
         try {
             int numProfiles = 3;
@@ -117,7 +108,6 @@ class Utils {
         }
     }
 
-    // Method that sets system property
     private static void setProp(final int profile) {
         new Thread(new Runnable() {
             @Override
@@ -175,7 +165,6 @@ class Utils {
 
     public static String getCustomDesc(String profileName) {
         try {
-            // Use scoped storage compatible path for Android 11+
             File customDescFile = new File(Environment.getExternalStorageDirectory() + File.separator + ".spectrum_descriptions");
             String retVal = readString(customDescFile, profileName);
             if (retVal != null) {
@@ -200,7 +189,6 @@ class Utils {
         }
     }
 
-    // New methods for dialogs
     public static void showNoSupportDialog(Context context) {
         try {
             AlertDialog dialog = new AlertDialog.Builder(context, R.style.SpectrumDialogTheme)
@@ -220,12 +208,9 @@ class Utils {
 
             dialog.show();
             
-            // Customize the OK button
             Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             if (positiveButton != null) {
-                positiveButton.setTextColor(ContextCompat.getColor(context, android.R.color.black));
                 positiveButton.setAllCaps(false);
-                positiveButton.setTextSize(16);
             }
 
         } catch (Exception e) {
@@ -252,12 +237,9 @@ class Utils {
 
             dialog.show();
             
-            // Customize the OK button
             Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             if (positiveButton != null) {
-                positiveButton.setTextColor(ContextCompat.getColor(context, android.R.color.black));
                 positiveButton.setAllCaps(false);
-                positiveButton.setTextSize(16);
             }
 
         } catch (Exception e) {
@@ -265,9 +247,6 @@ class Utils {
         }
     }
 
-    // ==================== KILL CAMERA METHODS ====================
-
-    // Check if camera services are running
     public static boolean isCameraServiceRunning(Context context) {
         try {
             ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
@@ -276,7 +255,6 @@ class Utils {
             List<ActivityManager.RunningServiceInfo> services = activityManager.getRunningServices(Integer.MAX_VALUE);
             if (services == null) return false;
 
-            // Common camera-related service names
             String[] cameraKeywords = {
                     "camera",
                     "mediaserver",
@@ -300,7 +278,6 @@ class Utils {
                 }
             }
 
-            // Also check running processes
             List<ActivityManager.RunningAppProcessInfo> processes = activityManager.getRunningAppProcesses();
             if (processes != null) {
                 for (ActivityManager.RunningAppProcessInfo process : processes) {
@@ -321,13 +298,10 @@ class Utils {
         return false;
     }
 
-    // Kill camera services and processes
     public static boolean killCameraServices(Context context) {
         try {
-            // Method 1: Kill camera processes using pkill
             ShellUtils.CommandResult result1 = ShellUtils.execCommand("pkill -f camera", true);
 
-            // Method 2: Stop camera-related packages
             String[] cameraPackages = {
                     "com.android.camera",
                     "com.google.android.GoogleCamera",
@@ -344,16 +318,13 @@ class Utils {
                 ShellUtils.execCommand("am force-stop " + pkg, true);
             }
 
-            // Method 3: Kill camera system services
             ShellUtils.execCommand("killall cameraserver", true);
             ShellUtils.execCommand("killall camera-provider", true);
             ShellUtils.execCommand("killall mediaserver", true);
 
-            // Method 4: Use setprop to disable camera temporarily
             ShellUtils.execCommand("setprop camera.disable_zsl_mode 1", true);
             ShellUtils.execCommand("setprop camera.hal1.packagelist ''", true);
 
-            // Method 5: Clear camera cache
             ShellUtils.execCommand("pm clear com.android.camera", true);
 
             return true;
@@ -364,16 +335,11 @@ class Utils {
         }
     }
 
-    // Restart camera services
     public static boolean restartCameraServices(Context context) {
         try {
-            // Restart camera HAL
             ShellUtils.execCommand("start cameraserver", true);
             ShellUtils.execCommand("start camera-provider", true);
-
-            // Reset camera properties
             ShellUtils.execCommand("setprop camera.disable_zsl_mode 0", true);
-
             return true;
 
         } catch (Exception e) {
@@ -382,10 +348,8 @@ class Utils {
         }
     }
 
-    // Check camera hardware status
     public static boolean isCameraHardwareAvailable(Context context) {
         try {
-            // Check if camera hardware is present
             List<String> result = safeShellRun("ls /dev/ | grep camera", true);
             return !listToString(result).isEmpty();
 
@@ -395,10 +359,8 @@ class Utils {
         }
     }
 
-    // Get camera processes info
     public static String getCameraProcessesInfo() {
         try {
-            // Get detailed info about camera processes
             List<String> psResult = safeShellRun("ps -A | grep -i camera", true);
             return listToString(psResult);
 
@@ -409,7 +371,6 @@ class Utils {
     }
 }
 
-// ShellUtils class for executing shell commands
 class ShellUtils {
 
     public static class CommandResult {
