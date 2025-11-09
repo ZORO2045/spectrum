@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#1A1A1A</color>
-    <color name="colorPrimaryDark">#1D1B20</color>
-    <color name="splash_background">#141218</color>
+    <color name="colorPrimary">#121212</color>
+    <color name="colorPrimaryDark">#0D0B10</color>
+    <color name="splash_background">#0A080C</color>
     <color name="colorAccent">#B399FF</color>
     <color name="colorBalance">#4EA853</color>
     <color name="colorPerformance">#FFB02E</color>
     <color name="colorBattery">#3B82F6</color>
     <color name="colorGaming">#EF4444</color>
-    <color name="cardBackground">#302D38</color>
-    <color name="cardStroke">#49454F</color>
+    <color name="cardBackground">#25222B</color>
+    <color name="cardStroke">#3A3640</color>
     <color name="colorCamera">#FF6B6B</color>
     
     <!-- Chip Colors -->
-    <color name="chip_background_color">#302D38</color>
+    <color name="chip_background_color">#25222B</color>
     <color name="chip_background_checked">#B399FF</color>
     <color name="chip_text_color">#E6E1E5</color>
-    <color name="chip_text_checked">#1D1B20</color>
-    <color name="chip_stroke_color">#49454F</color>
+    <color name="chip_text_checked">#0D0B10</color>
+    <color name="chip_stroke_color">#3A3640</color>
     <color name="chip_stroke_checked">#B399FF</color>
 </resources>
