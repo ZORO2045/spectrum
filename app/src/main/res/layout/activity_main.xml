@@ -36,8 +36,7 @@
             app:tabIndicatorHeight="3dp"
             app:tabMinWidth="80dp"
             app:tabPaddingStart="16dp"
-            app:tabPaddingEnd="16dp"
-            app:tabTextAppearance="@style/NoUpperCaseTabTextAppearance" />
+            app:tabPaddingEnd="16dp" />
 
     </com.google.android.material.appbar.AppBarLayout>
 
