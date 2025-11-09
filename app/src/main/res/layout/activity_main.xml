@@ -28,13 +28,16 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@color/colorPrimaryDark"
-            app:tabMode="fixed"
-            app:tabGravity="fill"
+            app:tabMode="scrollable"
+            app:tabGravity="center"
             app:tabTextColor="@android:color/white"
             app:tabSelectedTextColor="@android:color/white"
             app:tabIndicatorColor="@color/colorAccent"
             app:tabIndicatorHeight="3dp"
-            app:tabMaxWidth="0dp" />
+            app:tabMinWidth="80dp"
+            app:tabPaddingStart="16dp"
+            app:tabPaddingEnd="16dp"
+            app:tabTextAppearance="@style/NoUpperCaseTabTextAppearance" />
 
     </com.google.android.material.appbar.AppBarLayout>
 
