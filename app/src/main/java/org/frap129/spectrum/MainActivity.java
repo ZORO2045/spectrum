@@ -13,6 +13,10 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.content.Intent;
 import android.util.Log;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
+import android.graphics.Color;
+import java.lang.reflect.Method;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -131,11 +135,35 @@ public class MainActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         try {
             getMenuInflater().inflate(R.menu.nav, menu);
+            
+            for(int i = 0; i < menu.size(); i++) {
+                MenuItem menuItem = menu.getItem(i);
+                SpannableString spannable = new SpannableString(menuItem.getTitle());
+                spannable.setSpan(new ForegroundColorSpan(Color.WHITE), 0, spannable.length(), 0);
+                menuItem.setTitle(spannable);
+            }
+            
             return true;
         } catch (Exception e) {
             Log.e(TAG, "Error creating options menu", e);
             return false;
         }
+    }
+
+    @Override
+    public boolean onMenuOpened(int featureId, Menu menu) {
+        if (menu != null) {
+            if (menu.getClass().getSimpleName().equals("MenuBuilder")) {
+                try {
+                    Method m = menu.getClass().getDeclaredMethod("setOptionalIconsVisible", Boolean.TYPE);
+                    m.setAccessible(true);
+                    m.invoke(menu, true);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return super.onMenuOpened(featureId, menu);
     }
 
     @Override
@@ -176,9 +204,4 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "Error showing root warning", e);
         }
     }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-    }
-    }
+                    }
