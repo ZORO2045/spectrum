@@ -12,11 +12,13 @@ import androidx.viewpager2.adapter.FragmentStateAdapter;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.content.Intent;
+import android.util.Log;
 
 public class MainActivity extends AppCompatActivity {
 
     private ViewPager2 viewPager;
     private TabLayout tabLayout;
+    private static final String TAG = "MainActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,16 +31,26 @@ public class MainActivity extends AppCompatActivity {
         // Setup ViewPager and Tabs
         setupViewPager();
         
-        // Check for Spectrum Support
-        if (!Utils.checkSupport(this)) {
-            Utils.showNoSupportDialog(this);
-            return;
+        // Check for Spectrum Support with error handling
+        try {
+            if (!Utils.checkSupport(this)) {
+                Utils.showNoSupportDialog(this);
+                return;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error checking Spectrum support", e);
+            showCompatibilityWarning();
         }
 
-        // Ensure root access
-        if (!Utils.checkSU()) {
-            Utils.showNoRootDialog(this);
-            return;
+        // Ensure root access with error handling
+        try {
+            if (!Utils.checkSU()) {
+                Utils.showNoRootDialog(this);
+                return;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error checking root access", e);
+            showRootWarning();
         }
     }
 
@@ -46,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
         viewPager = findViewById(R.id.viewPager);
         tabLayout = findViewById(R.id.tabLayout);
         
+        // Keep all pages in memory to prevent reloading issues
         viewPager.setOffscreenPageLimit(5); 
         
         ViewPagerAdapter adapter = new ViewPagerAdapter(this);
@@ -76,7 +89,11 @@ public class MainActivity extends AppCompatActivity {
         
         // Fix: Set initial page to Profiles after short delay
         new Handler().postDelayed(() -> {
-            viewPager.setCurrentItem(0, false);
+            try {
+                viewPager.setCurrentItem(0, false);
+            } catch (Exception e) {
+                Log.e(TAG, "Error setting initial page", e);
+            }
         }, 50);
     }
 
@@ -87,21 +104,26 @@ public class MainActivity extends AppCompatActivity {
         
         @Override
         public Fragment createFragment(int position) {
-            switch (position) {
-                case 0:
-                    return new ProfilesFragment(); 
-                case 1:
-                    return new DashboardFragment();
-                case 2:
-                    return new CpuFragment();
-                case 3:
-                    return new AppsFragment();
-                case 4:
-                    return new KillCameraFragment(); 
-                case 5:
-                    return new AboutFragment(); 
-                default:
-                    return new DashboardFragment();
+            try {
+                switch (position) {
+                    case 0:
+                        return new ProfilesFragment(); 
+                    case 1:
+                        return new DashboardFragment();
+                    case 2:
+                        return new CpuFragment();
+                    case 3:
+                        return new AppsFragment();
+                    case 4:
+                        return new KillCameraFragment(); 
+                    case 5:
+                        return new AboutFragment(); 
+                    default:
+                        return new DashboardFragment();
+                }
+            } catch (Exception e) {
+                Log.e("ViewPagerAdapter", "Error creating fragment for position: " + position, e);
+                return new DashboardFragment(); // Fallback fragment
             }
         }
         
@@ -113,17 +135,60 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.nav, menu);
-        return true;
+        try {
+            getMenuInflater().inflate(R.menu.nav, menu);
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating options menu", e);
+            return false;
+        }
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.custom_profile) {
-            Intent intent = new Intent(this, ProfileLoaderActivity.class);
-            startActivity(intent);
-            return true;
+        try {
+            if (item.getItemId() == R.id.custom_profile) {
+                Intent intent = new Intent(this, ProfileLoaderActivity.class);
+                startActivity(intent);
+                return true;
+            }
+            return super.onOptionsItemSelected(item);
+        } catch (Exception e) {
+            Log.e(TAG, "Error handling menu item selection", e);
+            return false;
         }
-        return super.onOptionsItemSelected(item);
+    }
+
+    private void showCompatibilityWarning() {
+        try {
+            new android.app.AlertDialog.Builder(this)
+                .setTitle("Compatibility Notice")
+                .setMessage("This device may not be fully compatible with Spectrum. Some features might not work as expected.")
+                .setPositiveButton("Continue", null)
+                .show();
+        } catch (Exception e) {
+            Log.e(TAG, "Error showing compatibility warning", e);
+        }
+    }
+
+    private void showRootWarning() {
+        try {
+            new android.app.AlertDialog.Builder(this)
+                .setTitle("Root Access")
+                .setMessage("Root access is required for full functionality. Continuing with limited features.")
+                .setPositiveButton("Continue", null)
+                .show();
+        } catch (Exception e) {
+            Log.e(TAG, "Error showing root warning", e);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Clean up handlers to prevent memory leaks
+        if (handler != null) {
+            handler.removeCallbacksAndMessages(null);
+        }
     }
 }
