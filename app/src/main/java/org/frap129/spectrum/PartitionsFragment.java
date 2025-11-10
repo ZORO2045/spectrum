@@ -63,27 +63,96 @@ public class PartitionsFragment extends Fragment {
 
     private List<PartitionInfo> getPartitionsInfo() {
         List<PartitionInfo> partitions = new ArrayList<>();
+        
         partitions.add(getPartitionInfo("/system", "System", "ext4", "r"));
         partitions.add(getPartitionInfo("/data", "Data", "ext4", "r/w"));
         partitions.add(getPartitionInfo("/cache", "Cache", "ext4", "r/w"));
         partitions.add(getPartitionInfo("/vendor", "Vendor", "ext4", "r"));
+        
         File dataDir = new File("/data");
         if (dataDir.exists()) {
-            partitions.add(getPartitionInfo("/data", "Internal Storage", "fuse", "r/w"));
+            partitions.add(getPartitionInfo("/data", "Internal Storage", "ext4", "r/w"));
         }
-        File sdcardDir = new File("/sdcard");
-        if (sdcardDir.exists()) {
-            partitions.add(getPartitionInfo("/sdcard", "SD Card", "fuse", "r/w"));
-        }
-        File storageDir = new File("/storage");
-        if (storageDir.exists() && storageDir.listFiles() != null) {
-            for (File file : storageDir.listFiles()) {
-                if (file.isDirectory() && !file.getName().equals("emulated")) {
-                    partitions.add(getPartitionInfo(file.getAbsolutePath(), "External " + file.getName(), "fuse", "r/w"));
+        
+        findExternalStorage(partitions);
+        
+        return partitions;
+    }
+
+    private void findExternalStorage(List<PartitionInfo> partitions) {
+        String[] possiblePaths = {
+            "/storage/sdcard1",
+            "/storage/extSdCard",
+            "/storage/external_sd",
+            "/storage/external",
+            "/sdcard/external_sd",
+            "/mnt/sdcard/external_sd",
+            "/mnt/external_sd",
+            "/mnt/sdcard",
+            "/sdcard",
+            "/storage/emulated/0"
+        };
+        
+        for (String path : possiblePaths) {
+            File dir = new File(path);
+            if (dir.exists() && dir.isDirectory() && dir.canRead()) {
+                long totalSpace = dir.getTotalSpace();
+                long freeSpace = dir.getFreeSpace();
+                
+                if (totalSpace > 1024 * 1024) {
+                    String name = getStorageName(path);
+                    if (!isPartitionAlreadyAdded(partitions, name)) {
+                        partitions.add(getPartitionInfo(path, name, "fuse", "r/w"));
+                    }
                 }
             }
         }
-        return partitions;
+        
+        File storageDir = new File("/storage");
+        if (storageDir.exists() && storageDir.listFiles() != null) {
+            for (File file : storageDir.listFiles()) {
+                if (file.isDirectory() && !file.getName().equals("emulated") && 
+                    !file.getName().equals("self") && !file.getName().equals("0")) {
+                    
+                    String path = file.getAbsolutePath();
+                    long totalSpace = file.getTotalSpace();
+                    
+                    if (totalSpace > 1024 * 1024) {
+                        String name = "SD Card - " + file.getName();
+                        if (!isPartitionAlreadyAdded(partitions, name)) {
+                            partitions.add(getPartitionInfo(path, name, "fuse", "r/w"));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private String getStorageName(String path) {
+        switch (path) {
+            case "/storage/sdcard1":
+            case "/storage/extSdCard":
+            case "/storage/external_sd":
+                return "External SD Card";
+            case "/storage/emulated/0":
+            case "/sdcard":
+                return "Internal Storage";
+            default:
+                if (path.contains("sdcard") || path.contains("external")) {
+                    return "SD Card";
+                } else {
+                    return "Storage - " + new File(path).getName();
+                }
+        }
+    }
+
+    private boolean isPartitionAlreadyAdded(List<PartitionInfo> partitions, String name) {
+        for (PartitionInfo partition : partitions) {
+            if (partition.getName().equals(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private PartitionInfo getPartitionInfo(String path, String name, String type, String access) {
@@ -91,11 +160,17 @@ public class PartitionsFragment extends Fragment {
         long totalSpace = 0;
         long freeSpace = 0;
         long usedSpace = 0;
-        if (partition.exists()) {
-            totalSpace = partition.getTotalSpace();
-            freeSpace = partition.getFreeSpace();
-            usedSpace = totalSpace - freeSpace;
+        
+        if (partition.exists() && partition.isDirectory()) {
+            try {
+                totalSpace = partition.getTotalSpace();
+                freeSpace = partition.getFreeSpace();
+                usedSpace = totalSpace - freeSpace;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
+        
         return new PartitionInfo(name, path, type, access, "4.00 KiB", usedSpace, freeSpace, totalSpace);
     }
 
@@ -115,16 +190,18 @@ public class PartitionsFragment extends Fragment {
         tvAccess.setText(partition.getAccess());
         tvBlockSize.setText(partition.getBlockSize());
         
-        double usedGB = partition.getUsedSpace() / (1024.0 * 1024.0 * 1024.0);
-        double freeGB = partition.getFreeSpace() / (1024.0 * 1024.0 * 1024.0);
-        double totalGB = partition.getTotalSpace() / (1024.0 * 1024.0 * 1024.0);
+        String usedText = formatStorageSize(partition.getUsedSpace(), "used");
+        String freeText = formatStorageSize(partition.getFreeSpace(), "free");
+        String totalText = formatStorageSize(partition.getTotalSpace(), "total");
         
-        tvUsed.setText(String.format("%.2f GiB used", usedGB));
-        tvFree.setText(String.format("%.2f GiB free", freeGB));
-        tvTotal.setText(String.format("%.2f GiB total", totalGB));
+        tvUsed.setText(usedText);
+        tvFree.setText(freeText);
+        tvTotal.setText(totalText);
         
         int progress = 0;
-        if (totalGB > 0) progress = (int) ((usedGB / totalGB) * 100);
+        if (partition.getTotalSpace() > 0) {
+            progress = (int) ((partition.getUsedSpace() * 100) / partition.getTotalSpace());
+        }
         progressBar.setProgress(progress);
         
         return view;
@@ -135,12 +212,12 @@ public class PartitionsFragment extends Fragment {
         getActivity().runOnUiThread(() -> {
             memoryContainer.removeAllViews();
             MemoryInfo ramInfo = getMemoryInfo();
-            View ramView = createMemoryView("Memory (RAM)", ramInfo, true);
+            View ramView = createMemoryView("Memory (RAM)", ramInfo);
             memoryContainer.addView(ramView);
             
             MemoryInfo swapInfo = getSwapInfo();
             if (swapInfo.getTotal() > 0) {
-                View swapView = createMemoryView("Swap Memory", swapInfo, false);
+                View swapView = createMemoryView("Swap Memory", swapInfo);
                 memoryContainer.addView(swapView);
             }
         });
@@ -160,12 +237,11 @@ public class PartitionsFragment extends Fragment {
             }
             reader.close();
             
-            // Convert from KB to GB
-            double totalGB = totalMemory / (1024.0 * 1024.0);
-            double availableGB = availableMemory / (1024.0 * 1024.0);
-            double usedGB = totalGB - availableGB;
+            long totalBytes = totalMemory * 1024;
+            long availableBytes = availableMemory * 1024;
+            long usedBytes = totalBytes - availableBytes;
             
-            return new MemoryInfo(usedGB, availableGB, totalGB);
+            return new MemoryInfo(usedBytes, availableBytes, totalBytes);
         } catch (Exception e) {
             e.printStackTrace();
             return new MemoryInfo(0, 0, 0);
@@ -184,12 +260,11 @@ public class PartitionsFragment extends Fragment {
             }
             reader.close();
             
-            // Convert from KB to GB
-            double totalGB = totalSwap / (1024.0 * 1024.0);
-            double freeGB = freeSwap / (1024.0 * 1024.0);
-            double usedGB = totalGB - freeGB;
+            long totalBytes = totalSwap * 1024;
+            long freeBytes = freeSwap * 1024;
+            long usedBytes = totalBytes - freeBytes;
             
-            return new MemoryInfo(usedGB, freeGB, totalGB);
+            return new MemoryInfo(usedBytes, freeBytes, totalBytes);
         } catch (Exception e) {
             e.printStackTrace();
             return new MemoryInfo(0, 0, 0);
@@ -205,7 +280,7 @@ public class PartitionsFragment extends Fragment {
         }
     }
 
-    private View createMemoryView(String title, MemoryInfo memoryInfo, boolean isRam) {
+    private View createMemoryView(String title, MemoryInfo memoryInfo) {
         View view = LayoutInflater.from(getContext()).inflate(R.layout.item_memory, memoryContainer, false);
         TextView tvTitle = view.findViewById(R.id.tvMemoryTitle);
         TextView tvUsed = view.findViewById(R.id.tvMemoryUsed);
@@ -214,17 +289,41 @@ public class PartitionsFragment extends Fragment {
         LinearProgressIndicator progressBar = view.findViewById(R.id.progressMemory);
         
         tvTitle.setText(title);
-        tvUsed.setText(String.format("%.1f GiB used", memoryInfo.getUsed()));
-        tvFree.setText(String.format("%.1f GiB free", memoryInfo.getFree()));
-        tvTotal.setText(String.format("%.1f GiB total", memoryInfo.getTotal()));
+        
+        tvUsed.setText(formatStorageSize((long) memoryInfo.getUsed(), "used"));
+        tvFree.setText(formatStorageSize((long) memoryInfo.getFree(), "free"));
+        tvTotal.setText(formatStorageSize((long) memoryInfo.getTotal(), "total"));
         
         int progress = 0;
         if (memoryInfo.getTotal() > 0) {
-            progress = (int) ((memoryInfo.getUsed() / memoryInfo.getTotal()) * 100);
+            progress = (int) ((memoryInfo.getUsed() * 100) / memoryInfo.getTotal());
         }
         progressBar.setProgress(progress);
         
         return view;
+    }
+
+    private String formatStorageSize(long bytes, String type) {
+        double megaBytes = bytes / (1024.0 * 1024.0);
+        double gigaBytes = bytes / (1024.0 * 1024.0 * 1024.0);
+        
+        if (megaBytes < 800) {
+            if (type.equals("used")) {
+                return String.format("%.1f MB used", megaBytes);
+            } else if (type.equals("free")) {
+                return String.format("%.1f MB free", megaBytes);
+            } else {
+                return String.format("%.1f MB total", megaBytes);
+            }
+        } else {
+            if (type.equals("used")) {
+                return String.format("%.1f GB used", gigaBytes);
+            } else if (type.equals("free")) {
+                return String.format("%.1f GB free", gigaBytes);
+            } else {
+                return String.format("%.1f GB total", gigaBytes);
+            }
+        }
     }
 
     @Override
@@ -281,4 +380,4 @@ public class PartitionsFragment extends Fragment {
         public double getFree() { return free; }
         public double getTotal() { return total; }
     }
-                                                }
+}
