@@ -47,12 +47,8 @@ public class PartitionsFragment extends Fragment {
             }
         });
 
-        swipeRefreshLayout.setColorSchemeColors(
-            getResources().getColor(android.R.color.holo_blue_bright),
-            getResources().getColor(android.R.color.holo_green_light),
-            getResources().getColor(android.R.color.holo_orange_light),
-            getResources().getColor(android.R.color.holo_red_light)
-        );
+        swipeRefreshLayout.setColorSchemeColors(0xFFB399FF);
+        swipeRefreshLayout.setProgressBackgroundColorSchemeColor(0xFF1A1A1A);
     }
 
     private void loadData() {
@@ -462,4 +458,4 @@ public class PartitionsFragment extends Fragment {
         public double getFree() { return free; }
         public double getTotal() { return total; }
     }
-                }
+}
