@@ -189,38 +189,17 @@ public class PartitionsFragment extends Fragment {
 
     private String getRealAccess(String path) {
         try {
-            Process process = Runtime.getRuntime().exec("mount");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            
-            while ((line = reader.readLine()) != null) {
-                if (line.contains(path)) {
-                    if (line.contains("rw")) {
-                        reader.close();
-                        return "r/w";
-                    } else if (line.contains("ro")) {
-                        reader.close();
-                        return "r";
-                    }
-                }
-            }
-            reader.close();
-            
-            return getSimpleAccess(path);
-        } catch (Exception e) {
-            return getSimpleAccess(path);
-        }
-    }
-
-    private String getSimpleAccess(String path) {
-        try {
             File dir = new File(path);
+            if (!dir.exists()) return "unknown";
+            
             boolean canRead = dir.canRead();
             boolean canWrite = dir.canWrite();
             
             if (canRead && canWrite) return "r/w";
             else if (canRead) return "r";
+            else if (canWrite) return "w";
             else return "no access";
+            
         } catch (Exception e) {
             return "unknown";
         }
@@ -228,29 +207,18 @@ public class PartitionsFragment extends Fragment {
 
     private String getRealFilesystem(String path) {
         try {
-            Process process = Runtime.getRuntime().exec("mount");
+            Process process = Runtime.getRuntime().exec("stat -f -c %T " + path);
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            
-            while ((line = reader.readLine()) != null) {
-                if (line.contains(path)) {
-                    String[] parts = line.split("\\s+");
-                    if (parts.length >= 5) {
-                        String fsType = parts[4];
-                        if (fsType.contains("(")) {
-                            fsType = fsType.substring(0, fsType.indexOf("("));
-                        }
-                        reader.close();
-                        return fsType;
-                    }
-                }
-            }
+            String fsType = reader.readLine();
             reader.close();
             
-            return getSimpleFilesystem(path);
+            if (fsType != null && !fsType.isEmpty()) {
+                return fsType;
+            }
         } catch (Exception e) {
-            return getSimpleFilesystem(path);
         }
+        
+        return getSimpleFilesystem(path);
     }
 
     private String getSimpleFilesystem(String path) {
