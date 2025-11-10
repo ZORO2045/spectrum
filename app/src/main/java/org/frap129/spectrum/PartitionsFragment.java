@@ -1,7 +1,6 @@
 package org.frap129.spectrum;
 
 import android.os.Bundle;
-import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,6 +9,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import java.io.BufferedReader;
 import java.io.File;
@@ -20,33 +20,47 @@ import java.util.List;
 public class PartitionsFragment extends Fragment {
 
     private LinearLayout partitionsContainer, memoryContainer;
-    private Handler handler = new Handler();
-    private Runnable updateRunnable;
+    private SwipeRefreshLayout swipeRefreshLayout;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_partitions, container, false);
         initViews(view);
-        startMonitoring();
+        setupSwipeRefresh();
+        loadData();
         return view;
     }
 
     private void initViews(View view) {
         partitionsContainer = view.findViewById(R.id.partitionsContainer);
         memoryContainer = view.findViewById(R.id.memoryContainer);
+        swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
     }
 
-    private void startMonitoring() {
-        updateRunnable = new Runnable() {
+    private void setupSwipeRefresh() {
+        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
-            public void run() {
-                updatePartitionsInfo();
-                updateMemoryInfo();
-                handler.postDelayed(this, 5000);
+            public void onRefresh() {
+                loadData();
             }
-        };
-        handler.post(updateRunnable);
+        });
+
+        swipeRefreshLayout.setColorSchemeColors(
+            getResources().getColor(android.R.color.holo_blue_bright),
+            getResources().getColor(android.R.color.holo_green_light),
+            getResources().getColor(android.R.color.holo_orange_light),
+            getResources().getColor(android.R.color.holo_red_light)
+        );
+    }
+
+    private void loadData() {
+        updatePartitionsInfo();
+        updateMemoryInfo();
+        
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setRefreshing(false);
+        }
     }
 
     private void updatePartitionsInfo() {
@@ -324,14 +338,6 @@ public class PartitionsFragment extends Fragment {
         }
     }
 
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        if (handler != null && updateRunnable != null) {
-            handler.removeCallbacks(updateRunnable);
-        }
-    }
-
     private static class PartitionInfo {
         private String name;
         private String path;
@@ -375,4 +381,4 @@ public class PartitionsFragment extends Fragment {
         public double getFree() { return free; }
         public double getTotal() { return total; }
     }
-    }
+}
