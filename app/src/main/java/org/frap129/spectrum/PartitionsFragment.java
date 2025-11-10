@@ -1,5 +1,6 @@
 package org.frap129.spectrum;
 
+import android.Manifest;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,6 +9,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
@@ -28,6 +31,7 @@ public class PartitionsFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_partitions, container, false);
         initViews(view);
+        requestPermissions();
         setupSwipeRefresh();
         loadData();
         return view;
@@ -39,14 +43,16 @@ public class PartitionsFragment extends Fragment {
         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
     }
 
-    private void setupSwipeRefresh() {
-        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                loadData();
-            }
-        });
+    private void requestPermissions() {
+        if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.READ_EXTERNAL_STORAGE)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(getActivity(),
+                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
+        }
+    }
 
+    private void setupSwipeRefresh() {
+        swipeRefreshLayout.setOnRefreshListener(this::loadData);
         swipeRefreshLayout.setColorSchemeColors(0xFFB399FF);
         swipeRefreshLayout.setProgressBackgroundColorSchemeColor(0xFF1A1A1A);
     }
@@ -54,10 +60,7 @@ public class PartitionsFragment extends Fragment {
     private void loadData() {
         updatePartitionsInfo();
         updateMemoryInfo();
-        
-        if (swipeRefreshLayout != null) {
-            swipeRefreshLayout.setRefreshing(false);
-        }
+        if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
     }
 
     private void updatePartitionsInfo() {
@@ -74,66 +77,27 @@ public class PartitionsFragment extends Fragment {
 
     private List<PartitionInfo> getPartitionsInfo() {
         List<PartitionInfo> partitions = new ArrayList<>();
-        
         partitions.add(getPartitionInfo("/system", "System"));
         partitions.add(getPartitionInfo("/data", "Data"));
         partitions.add(getPartitionInfo("/cache", "Cache"));
         partitions.add(getPartitionInfo("/vendor", "Vendor"));
-        
         findExternalStorage(partitions);
-        
         return partitions;
     }
 
     private void findExternalStorage(List<PartitionInfo> partitions) {
-        String internalStoragePath = getInternalStoragePath();
-        
-        File storageDir = new File("/storage");
-        if (storageDir.exists() && storageDir.listFiles() != null) {
-            for (File file : storageDir.listFiles()) {
-                if (file.isDirectory() && !file.getName().equals("emulated") && 
-                    !file.getName().equals("self") && !file.getName().equals("0") &&
-                    !file.getAbsolutePath().equals(internalStoragePath)) {
-                    
-                    String path = file.getAbsolutePath();
-                    long totalSpace = file.getTotalSpace();
-                    
-                    if (totalSpace > 1024 * 1024) {
-                        partitions.add(getPartitionInfo(path, "External Storage"));
+        File[] externalDirs = getContext().getExternalFilesDirs(null);
+        for (File dir : externalDirs) {
+            if (dir != null) {
+                String path = dir.getAbsolutePath();
+                if (!path.contains("emulated")) {
+                    File root = new File(path.split("/Android")[0]);
+                    if (root.exists() && root.getTotalSpace() > 0) {
+                        partitions.add(getPartitionInfo(root.getAbsolutePath(), "External Storage"));
                     }
                 }
             }
         }
-        
-        File mntDir = new File("/mnt");
-        if (mntDir.exists() && mntDir.listFiles() != null) {
-            for (File file : mntDir.listFiles()) {
-                if (file.isDirectory() && !file.getAbsolutePath().equals(internalStoragePath)) {
-                    
-                    String path = file.getAbsolutePath();
-                    long totalSpace = file.getTotalSpace();
-                    
-                    if (totalSpace > 1024 * 1024) {
-                        partitions.add(getPartitionInfo(path, "External Storage"));
-                    }
-                }
-            }
-        }
-    }
-
-    private String getInternalStoragePath() {
-        File[] possibleInternalPaths = {
-            new File("/storage/emulated/0"),
-            new File("/sdcard"),
-            new File("/mnt/sdcard")
-        };
-        
-        for (File path : possibleInternalPaths) {
-            if (path.exists() && path.isDirectory() && path.canRead()) {
-                return path.getAbsolutePath();
-            }
-        }
-        return "/storage/emulated/0";
     }
 
     private PartitionInfo getPartitionInfo(String path, String name) {
@@ -143,17 +107,13 @@ public class PartitionsFragment extends Fragment {
         long usedSpace = 0;
         String realAccess = getRealAccess(path);
         String realFilesystem = getRealFilesystem(path);
-        
         if (partition.exists() && partition.isDirectory()) {
             try {
                 totalSpace = partition.getTotalSpace();
                 freeSpace = partition.getFreeSpace();
                 usedSpace = totalSpace - freeSpace;
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            } catch (Exception ignored) {}
         }
-        
         return new PartitionInfo(name, path, realFilesystem, realAccess, usedSpace, freeSpace, totalSpace);
     }
 
@@ -162,7 +122,6 @@ public class PartitionsFragment extends Fragment {
             Process process = Runtime.getRuntime().exec("mount");
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
-            
             while ((line = reader.readLine()) != null) {
                 if (line.contains(path)) {
                     if (line.contains("rw")) {
@@ -175,9 +134,7 @@ public class PartitionsFragment extends Fragment {
                 }
             }
             reader.close();
-        } catch (Exception e) {
-        }
-        
+        } catch (Exception ignored) {}
         return getSimpleAccess(path);
     }
 
@@ -196,13 +153,11 @@ public class PartitionsFragment extends Fragment {
             Process process = Runtime.getRuntime().exec("cat /proc/mounts");
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
-            
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split("\\s+");
                 if (parts.length >= 3) {
                     String mountPoint = parts[1];
                     String fsType = parts[2];
-                    
                     if (mountPoint.equals(path)) {
                         reader.close();
                         return fsType;
@@ -210,9 +165,7 @@ public class PartitionsFragment extends Fragment {
                 }
             }
             reader.close();
-        } catch (Exception e) {
-        }
-        
+        } catch (Exception ignored) {}
         return "fuse";
     }
 
@@ -225,25 +178,17 @@ public class PartitionsFragment extends Fragment {
         TextView tvFree = view.findViewById(R.id.tvFreeSpace);
         TextView tvTotal = view.findViewById(R.id.tvTotalSpace);
         LinearProgressIndicator progressBar = view.findViewById(R.id.progressBar);
-        
         tvName.setText(partition.getName());
         tvType.setText(partition.getType());
         tvAccess.setText(partition.getAccess());
-        
-        String usedText = formatStorageSize(partition.getUsedSpace(), "used");
-        String freeText = formatStorageSize(partition.getFreeSpace(), "free");
-        String totalText = formatStorageSize(partition.getTotalSpace(), "total");
-        
-        tvUsed.setText(usedText);
-        tvFree.setText(freeText);
-        tvTotal.setText(totalText);
-        
+        tvUsed.setText(formatStorageSize(partition.getUsedSpace(), "used"));
+        tvFree.setText(formatStorageSize(partition.getFreeSpace(), "free"));
+        tvTotal.setText(formatStorageSize(partition.getTotalSpace(), "total"));
         int progress = 0;
         if (partition.getTotalSpace() > 0) {
             progress = (int) ((partition.getUsedSpace() * 100) / partition.getTotalSpace());
         }
         progressBar.setProgress(progress);
-        
         return view;
     }
 
@@ -254,7 +199,6 @@ public class PartitionsFragment extends Fragment {
             MemoryInfo ramInfo = getMemoryInfo();
             View ramView = createMemoryView("Memory (RAM)", ramInfo);
             memoryContainer.addView(ramView);
-            
             MemoryInfo swapInfo = getSwapInfo();
             if (swapInfo.getTotal() > 0) {
                 View swapView = createMemoryView("Swap Memory", swapInfo);
@@ -268,19 +212,15 @@ public class PartitionsFragment extends Fragment {
             BufferedReader reader = new BufferedReader(new FileReader("/proc/meminfo"));
             String line;
             long totalMemory = 0;
-            long freeMemory = 0;
             long availableMemory = 0;
             while ((line = reader.readLine()) != null) {
                 if (line.startsWith("MemTotal:")) totalMemory = parseMemInfoLine(line);
-                else if (line.startsWith("MemFree:")) freeMemory = parseMemInfoLine(line);
                 else if (line.startsWith("MemAvailable:")) availableMemory = parseMemInfoLine(line);
             }
             reader.close();
-            
             long totalBytes = totalMemory * 1024;
             long availableBytes = availableMemory * 1024;
             long usedBytes = totalBytes - availableBytes;
-            
             return new MemoryInfo(usedBytes, availableBytes, totalBytes);
         } catch (Exception e) {
             e.printStackTrace();
@@ -299,11 +239,9 @@ public class PartitionsFragment extends Fragment {
                 else if (line.startsWith("SwapFree:")) freeSwap = parseMemInfoLine(line);
             }
             reader.close();
-            
             long totalBytes = totalSwap * 1024;
             long freeBytes = freeSwap * 1024;
             long usedBytes = totalBytes - freeBytes;
-            
             return new MemoryInfo(usedBytes, freeBytes, totalBytes);
         } catch (Exception e) {
             e.printStackTrace();
@@ -327,42 +265,29 @@ public class PartitionsFragment extends Fragment {
         TextView tvFree = view.findViewById(R.id.tvMemoryFree);
         TextView tvTotal = view.findViewById(R.id.tvMemoryTotal);
         LinearProgressIndicator progressBar = view.findViewById(R.id.progressMemory);
-        
         tvTitle.setText(title);
-        
         tvUsed.setText(formatStorageSize((long) memoryInfo.getUsed(), "used"));
         tvFree.setText(formatStorageSize((long) memoryInfo.getFree(), "free"));
         tvTotal.setText(formatStorageSize((long) memoryInfo.getTotal(), "total"));
-        
         int progress = 0;
         if (memoryInfo.getTotal() > 0) {
             progress = (int) ((memoryInfo.getUsed() * 100) / memoryInfo.getTotal());
         }
         progressBar.setProgress(progress);
-        
         return view;
     }
 
     private String formatStorageSize(long bytes, String type) {
         double megaBytes = bytes / (1024.0 * 1024.0);
         double gigaBytes = bytes / (1024.0 * 1024.0 * 1024.0);
-        
         if (megaBytes < 800) {
-            if (type.equals("used")) {
-                return String.format("%.1f MB used", megaBytes);
-            } else if (type.equals("free")) {
-                return String.format("%.1f MB free", megaBytes);
-            } else {
-                return String.format("%.1f MB total", megaBytes);
-            }
+            if (type.equals("used")) return String.format("%.1f MB used", megaBytes);
+            else if (type.equals("free")) return String.format("%.1f MB free", megaBytes);
+            else return String.format("%.1f MB total", megaBytes);
         } else {
-            if (type.equals("used")) {
-                return String.format("%.1f GB used", gigaBytes);
-            } else if (type.equals("free")) {
-                return String.format("%.1f GB free", gigaBytes);
-            } else {
-                return String.format("%.1f GB total", gigaBytes);
-            }
+            if (type.equals("used")) return String.format("%.1f GB used", gigaBytes);
+            else if (type.equals("free")) return String.format("%.1f GB free", gigaBytes);
+            else return String.format("%.1f GB total", gigaBytes);
         }
     }
 
@@ -374,7 +299,6 @@ public class PartitionsFragment extends Fragment {
         private long usedSpace;
         private long freeSpace;
         private long totalSpace;
-
         public PartitionInfo(String name, String path, String type, String access, long usedSpace, long freeSpace, long totalSpace) {
             this.name = name;
             this.path = path;
@@ -384,7 +308,6 @@ public class PartitionsFragment extends Fragment {
             this.freeSpace = freeSpace;
             this.totalSpace = totalSpace;
         }
-
         public String getName() { return name; }
         public String getPath() { return path; }
         public String getType() { return type; }
@@ -398,13 +321,11 @@ public class PartitionsFragment extends Fragment {
         private double used;
         private double free;
         private double total;
-
         public MemoryInfo(double used, double free, double total) {
             this.used = used;
             this.free = free;
             this.total = total;
         }
-
         public double getUsed() { return used; }
         public double getFree() { return free; }
         public double getTotal() { return total; }
