@@ -88,45 +88,6 @@ public class PartitionsFragment extends Fragment {
     private void findExternalStorage(List<PartitionInfo> partitions) {
         String internalStoragePath = getInternalStoragePath();
         
-        String[] possiblePaths = {
-            "/storage/sdcard1",
-            "/storage/extSdCard",
-            "/storage/external_sd",
-            "/storage/external",
-            "/sdcard/external_sd",
-            "/mnt/sdcard/external_sd",
-            "/mnt/external_sd",
-            "/mnt/sdcard",
-            "/mnt/media_rw",
-            "/storage/UsbDriveA",
-            "/storage/UsbDriveB",
-            "/mnt/usb_storage",
-            "/storage/usb"
-        };
-        
-        for (String path : possiblePaths) {
-            File dir = new File(path);
-            if (dir.exists() && dir.isDirectory() && dir.canRead()) {
-                long totalSpace = dir.getTotalSpace();
-                long freeSpace = dir.getFreeSpace();
-                
-                boolean isDuplicate = false;
-                for (PartitionInfo p : partitions) {
-                    if (p.getPath().equals(path)) {
-                        isDuplicate = true;
-                        break;
-                    }
-                }
-                
-                if (!isDuplicate && totalSpace > 1024 * 1024 && !path.equals(internalStoragePath)) {
-                    String name = getStorageName(path);
-                    if (!isPartitionAlreadyAdded(partitions, name)) {
-                        partitions.add(getPartitionInfo(path, name));
-                    }
-                }
-            }
-        }
-        
         File storageDir = new File("/storage");
         if (storageDir.exists() && storageDir.listFiles() != null) {
             for (File file : storageDir.listFiles()) {
@@ -137,19 +98,8 @@ public class PartitionsFragment extends Fragment {
                     String path = file.getAbsolutePath();
                     long totalSpace = file.getTotalSpace();
                     
-                    boolean isDuplicate = false;
-                    for (PartitionInfo p : partitions) {
-                        if (p.getPath().equals(path)) {
-                            isDuplicate = true;
-                            break;
-                        }
-                    }
-                    
-                    if (!isDuplicate && totalSpace > 1024 * 1024) {
-                        String name = "External Storage - " + file.getName();
-                        if (!isPartitionAlreadyAdded(partitions, name)) {
-                            partitions.add(getPartitionInfo(path, name));
-                        }
+                    if (totalSpace > 1024 * 1024) {
+                        partitions.add(getPartitionInfo(path, "External Storage"));
                     }
                 }
             }
@@ -158,26 +108,13 @@ public class PartitionsFragment extends Fragment {
         File mntDir = new File("/mnt");
         if (mntDir.exists() && mntDir.listFiles() != null) {
             for (File file : mntDir.listFiles()) {
-                if (file.isDirectory() && (file.getName().contains("sdcard") || 
-                    file.getName().contains("external") || file.getName().contains("media") ||
-                    file.getName().contains("usb")) && !file.getAbsolutePath().equals(internalStoragePath)) {
+                if (file.isDirectory() && !file.getAbsolutePath().equals(internalStoragePath)) {
                     
                     String path = file.getAbsolutePath();
                     long totalSpace = file.getTotalSpace();
                     
-                    boolean isDuplicate = false;
-                    for (PartitionInfo p : partitions) {
-                        if (p.getPath().equals(path)) {
-                            isDuplicate = true;
-                            break;
-                        }
-                    }
-                    
-                    if (!isDuplicate && totalSpace > 1024 * 1024) {
-                        String name = "External Storage - " + file.getName();
-                        if (!isPartitionAlreadyAdded(partitions, name)) {
-                            partitions.add(getPartitionInfo(path, name));
-                        }
+                    if (totalSpace > 1024 * 1024) {
+                        partitions.add(getPartitionInfo(path, "External Storage"));
                     }
                 }
             }
@@ -197,28 +134,6 @@ public class PartitionsFragment extends Fragment {
             }
         }
         return "/storage/emulated/0";
-    }
-
-    private String getStorageName(String path) {
-        if (path.equals("/storage/sdcard1") || path.equals("/storage/extSdCard") || 
-            path.equals("/storage/external_sd") || path.contains("media_rw")) {
-            return "SD Card";
-        } else if (path.contains("UsbDrive") || path.contains("usb")) {
-            return "USB Storage";
-        } else if (path.contains("sdcard") || path.contains("external")) {
-            return "External Storage";
-        } else {
-            return "Storage - " + new File(path).getName();
-        }
-    }
-
-    private boolean isPartitionAlreadyAdded(List<PartitionInfo> partitions, String name) {
-        for (PartitionInfo partition : partitions) {
-            if (partition.getName().equals(name)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private PartitionInfo getPartitionInfo(String path, String name) {
@@ -271,10 +186,8 @@ public class PartitionsFragment extends Fragment {
             return "r";
         } else if (path.equals("/data") || path.equals("/cache")) {
             return "r/w";
-        } else if (path.contains("sdcard") || path.contains("storage")) {
-            return "r/w";
         } else {
-            return "unknown";
+            return "r/w";
         }
     }
 
@@ -300,45 +213,7 @@ public class PartitionsFragment extends Fragment {
         } catch (Exception e) {
         }
         
-        try {
-            Process process = Runtime.getRuntime().exec("mount");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            
-            while ((line = reader.readLine()) != null) {
-                if (line.contains(" on " + path + " ")) {
-                    String[] parts = line.split("\\s+");
-                    for (int i = 0; i < parts.length; i++) {
-                        if (parts[i].equals("on") && i + 1 < parts.length && parts[i + 1].equals(path)) {
-                            if (i + 3 < parts.length) {
-                                String fsType = parts[i + 3];
-                                if (fsType.contains("(")) {
-                                    fsType = fsType.substring(0, fsType.indexOf("("));
-                                }
-                                reader.close();
-                                return fsType;
-                            }
-                        }
-                    }
-                }
-            }
-            reader.close();
-        } catch (Exception e) {
-        }
-        
-        return getSimpleFilesystem(path);
-    }
-
-    private String getSimpleFilesystem(String path) {
-        if (path.contains("sdcard") || path.contains("storage") || path.contains("emulated")) {
-            return "fuse";
-        } else if (path.equals("/system") || path.equals("/vendor")) {
-            return "ext4";
-        } else if (path.equals("/data") || path.equals("/cache")) {
-            return "ext4";
-        } else {
-            return "unknown";
-        }
+        return "fuse";
     }
 
     private View createPartitionView(PartitionInfo partition) {
