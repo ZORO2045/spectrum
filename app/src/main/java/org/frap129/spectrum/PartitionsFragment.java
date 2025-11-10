@@ -197,7 +197,6 @@ public class PartitionsFragment extends Fragment {
             
             if (canRead && canWrite) return "r/w";
             else if (canRead) return "r";
-            else if (canWrite) return "w";
             else return "no access";
             
         } catch (Exception e) {
