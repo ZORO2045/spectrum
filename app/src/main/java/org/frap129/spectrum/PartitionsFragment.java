@@ -85,18 +85,21 @@ public class PartitionsFragment extends Fragment {
             
             List<PartitionInfo> partitions = getPartitionsInfo();
             for (PartitionInfo partition : partitions) {
-                View partitionView = createPartitionViewWithAnimation(partition);
+                View partitionView = createPartitionView(partition);
                 partitionsContainer.addView(partitionView);
+                animateProgressBarOnly(partitionView, partition, 1000);
             }
 
             MemoryInfo ramInfo = getMemoryInfo();
-            View ramView = createMemoryViewWithAnimation("Memory (RAM)", ramInfo);
+            View ramView = createMemoryView("Memory (RAM)", ramInfo);
             memoryContainer.addView(ramView);
+            animateProgressBarOnly(ramView, ramInfo, 1000);
             
             MemoryInfo swapInfo = getSwapInfo();
             if (swapInfo.getTotal() > 0) {
-                View swapView = createMemoryViewWithAnimation("Swap Memory", swapInfo);
+                View swapView = createMemoryView("Swap Memory", swapInfo);
                 memoryContainer.addView(swapView);
+                animateProgressBarOnly(swapView, swapInfo, 1000);
             }
         });
     }
@@ -110,139 +113,31 @@ public class PartitionsFragment extends Fragment {
             
             handler.postDelayed(() -> {
                 List<PartitionInfo> partitions = getPartitionsInfo();
-                for (int i = 0; i < partitions.size(); i++) {
-                    PartitionInfo partition = partitions.get(i);
-                    View partitionView = createPartitionViewWithRefreshAnimation(partition);
+                for (PartitionInfo partition : partitions) {
+                    View partitionView = createPartitionView(partition);
                     partitionsContainer.addView(partitionView);
-                    
-                    if (i < partitions.size() - 1) {
-                        try {
-                            Thread.sleep(100);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
+                    animateProgressBarOnly(partitionView, partition, 600);
                 }
 
                 MemoryInfo ramInfo = getMemoryInfo();
-                View ramView = createMemoryViewWithRefreshAnimation("Memory (RAM)", ramInfo);
+                View ramView = createMemoryView("Memory (RAM)", ramInfo);
                 memoryContainer.addView(ramView);
+                animateProgressBarOnly(ramView, ramInfo, 600);
                 
                 MemoryInfo swapInfo = getSwapInfo();
                 if (swapInfo.getTotal() > 0) {
-                    View swapView = createMemoryViewWithRefreshAnimation("Swap Memory", swapInfo);
+                    View swapView = createMemoryView("Swap Memory", swapInfo);
                     memoryContainer.addView(swapView);
+                    animateProgressBarOnly(swapView, swapInfo, 600);
                 }
                 
                 swipeRefreshLayout.setRefreshing(false);
-            }, 500);
+            }, 300);
         });
     }
 
-    private View createPartitionViewWithAnimation(PartitionInfo partition) {
-        View view = LayoutInflater.from(getContext()).inflate(R.layout.item_partition, partitionsContainer, false);
-        setupPartitionView(view, partition);
-        
-        view.setAlpha(0f);
-        view.setTranslationY(50f);
-        view.animate()
-            .alpha(1f)
-            .translationY(0f)
-            .setDuration(600)
-            .start();
-        
+    private void animateProgressBarOnly(View view, PartitionInfo partition, int duration) {
         LinearProgressIndicator progressBar = view.findViewById(R.id.progressBar);
-        animateProgressBar(progressBar, partition, 800);
-        
-        return view;
-    }
-
-    private View createPartitionViewWithRefreshAnimation(PartitionInfo partition) {
-        View view = LayoutInflater.from(getContext()).inflate(R.layout.item_partition, partitionsContainer, false);
-        setupPartitionView(view, partition);
-        
-        view.setAlpha(0f);
-        view.setScaleX(0.8f);
-        view.setScaleY(0.8f);
-        view.animate()
-            .alpha(1f)
-            .scaleX(1f)
-            .scaleY(1f)
-            .setDuration(400)
-            .start();
-        
-        LinearProgressIndicator progressBar = view.findViewById(R.id.progressBar);
-        animateProgressBar(progressBar, partition, 600);
-        
-        return view;
-    }
-
-    private View createMemoryViewWithAnimation(String title, MemoryInfo memoryInfo) {
-        View view = LayoutInflater.from(getContext()).inflate(R.layout.item_memory, memoryContainer, false);
-        setupMemoryView(view, title, memoryInfo);
-        
-        view.setAlpha(0f);
-        view.setTranslationY(50f);
-        view.animate()
-            .alpha(1f)
-            .translationY(0f)
-            .setDuration(600)
-            .setStartDelay(200)
-            .start();
-        
-        LinearProgressIndicator progressBar = view.findViewById(R.id.progressMemory);
-        animateProgressBar(progressBar, memoryInfo, 800);
-        
-        return view;
-    }
-
-    private View createMemoryViewWithRefreshAnimation(String title, MemoryInfo memoryInfo) {
-        View view = LayoutInflater.from(getContext()).inflate(R.layout.item_memory, memoryContainer, false);
-        setupMemoryView(view, title, memoryInfo);
-        
-        view.setAlpha(0f);
-        view.setScaleX(0.8f);
-        view.setScaleY(0.8f);
-        view.animate()
-            .alpha(1f)
-            .scaleX(1f)
-            .scaleY(1f)
-            .setDuration(400)
-            .start();
-        
-        LinearProgressIndicator progressBar = view.findViewById(R.id.progressMemory);
-        animateProgressBar(progressBar, memoryInfo, 600);
-        
-        return view;
-    }
-
-    private void setupPartitionView(View view, PartitionInfo partition) {
-        TextView tvName = view.findViewById(R.id.tvPartitionName);
-        TextView tvAccess = view.findViewById(R.id.tvPartitionAccess);
-        TextView tvUsed = view.findViewById(R.id.tvUsedSpace);
-        TextView tvFree = view.findViewById(R.id.tvFreeSpace);
-        TextView tvTotal = view.findViewById(R.id.tvTotalSpace);
-        
-        tvName.setText(partition.getName());
-        tvAccess.setText(partition.getAccess());
-        tvUsed.setText(formatStorageSize(partition.getUsedSpace(), "used"));
-        tvFree.setText(formatStorageSize(partition.getFreeSpace(), "free"));
-        tvTotal.setText(formatStorageSize(partition.getTotalSpace(), "total"));
-    }
-
-    private void setupMemoryView(View view, String title, MemoryInfo memoryInfo) {
-        TextView tvTitle = view.findViewById(R.id.tvMemoryTitle);
-        TextView tvUsed = view.findViewById(R.id.tvMemoryUsed);
-        TextView tvFree = view.findViewById(R.id.tvMemoryFree);
-        TextView tvTotal = view.findViewById(R.id.tvMemoryTotal);
-        
-        tvTitle.setText(title);
-        tvUsed.setText(formatStorageSize((long) memoryInfo.getUsed(), "used"));
-        tvFree.setText(formatStorageSize((long) memoryInfo.getFree(), "free"));
-        tvTotal.setText(formatStorageSize((long) memoryInfo.getTotal(), "total"));
-    }
-
-    private void animateProgressBar(LinearProgressIndicator progressBar, PartitionInfo partition, int duration) {
         final int targetProgress;
         if (partition.getTotalSpace() > 0) {
             targetProgress = (int) ((partition.getUsedSpace() * 100) / partition.getTotalSpace());
@@ -251,17 +146,13 @@ public class PartitionsFragment extends Fragment {
         }
         
         progressBar.setProgress(0);
-        progressBar.animate()
-            .setDuration(duration)
-            .setStartDelay(300)
-            .start();
-        
         handler.postDelayed(() -> {
             progressBar.setProgress(targetProgress);
-        }, 300);
+        }, 100);
     }
 
-    private void animateProgressBar(LinearProgressIndicator progressBar, MemoryInfo memoryInfo, int duration) {
+    private void animateProgressBarOnly(View view, MemoryInfo memoryInfo, int duration) {
+        LinearProgressIndicator progressBar = view.findViewById(R.id.progressMemory);
         final int targetProgress;
         if (memoryInfo.getTotal() > 0) {
             targetProgress = (int) ((memoryInfo.getUsed() * 100) / memoryInfo.getTotal());
@@ -270,14 +161,9 @@ public class PartitionsFragment extends Fragment {
         }
         
         progressBar.setProgress(0);
-        progressBar.animate()
-            .setDuration(duration)
-            .setStartDelay(300)
-            .start();
-        
         handler.postDelayed(() -> {
             progressBar.setProgress(targetProgress);
-        }, 300);
+        }, 100);
     }
 
     private void updatePartitionsInfo() {
