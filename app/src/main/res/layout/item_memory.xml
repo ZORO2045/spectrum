@@ -16,7 +16,7 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Memory Title -->
+        <!-- Memory Header -->
         <TextView
             android:id="@+id/tvMemoryTitle"
             android:layout_width="match_parent"
@@ -31,11 +31,12 @@
         <com.google.android.material.progressindicator.LinearProgressIndicator
             android:id="@+id/progressMemory"
             android:layout_width="match_parent"
-            android:layout_height="4dp"
-            android:layout_marginBottom="8dp"
+            android:layout_height="8dp"
+            android:layout_marginBottom="12dp"
             android:indeterminate="false"
             app:trackColor="#494458"
-            app:indicatorColor="#D0BCFD" />
+            app:indicatorColor="#D0BCFD"
+            app:trackThickness="8dp" />
 
         <!-- Memory Information -->
         <LinearLayout
@@ -49,7 +50,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="0.0 GB used"
+                android:text="0.00 GB used"
                 android:textColor="#B399FF"
                 android:textSize="12sp"
                 android:textStyle="bold" />
@@ -58,7 +59,7 @@
                 android:id="@+id/tvMemoryFree"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="0.0 GB free"
+                android:text="0.00 GB free"
                 android:textColor="#AAAAAA"
                 android:textSize="12sp" />
 
@@ -66,7 +67,7 @@
                 android:id="@+id/tvMemoryTotal"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="0.0 GB total"
+                android:text="0.00 GB total"
                 android:textColor="#AAAAAA"
                 android:textSize="12sp"
                 android:layout_marginStart="8dp" />
