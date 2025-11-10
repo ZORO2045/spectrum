@@ -117,11 +117,11 @@ public class MainActivity extends AppCompatActivity {
                     case 5:
                         return new AboutFragment(); 
                     default:
-                        return new DashboardFragment();
+                        return new PartitionsFragment();
                 }
             } catch (Exception e) {
                 Log.e("ViewPagerAdapter", "Error creating fragment for position: " + position, e);
-                return new DashboardFragment();
+                return new PartitionsFragment();
             }
         }
         
