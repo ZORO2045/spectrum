@@ -69,7 +69,8 @@
             android:indeterminate="false"
             app:trackColor="#494458"
             app:indicatorColor="#D0BCFD"
-            app:trackThickness="8dp" />
+            app:trackThickness="8dp"
+            app:trackCornerRadius="4dp" />
 
         <!-- Space Information -->
         <LinearLayout
@@ -103,7 +104,7 @@
                 android:text="0.00 GB total"
                 android:textColor="#AAAAAA"
                 android:textSize="12sp"
-                android:layout_marginStart="8dp" />
+            android:layout_marginStart="8dp" />
 
         </LinearLayout>
 
