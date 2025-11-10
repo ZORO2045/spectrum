@@ -30,17 +30,18 @@ public class PartitionsFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_partitions, container, false);
-        initViews(view);
-        requestPermissions();
-        setupSwipeRefresh();
-        loadData();
-        return view;
-    }
-
-    private void initViews(View view) {
         partitionsContainer = view.findViewById(R.id.partitionsContainer);
         memoryContainer = view.findViewById(R.id.memoryContainer);
         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
+        requestPermissions();
+        setupSwipeRefresh();
+        return view;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (partitionsContainer.getChildCount() == 0) loadData();
     }
 
     private void requestPermissions() {
@@ -52,7 +53,6 @@ public class PartitionsFragment extends Fragment {
     }
 
     private void setupSwipeRefresh() {
-        swipeRefreshLayout.setEnabled(true);
         swipeRefreshLayout.setOnRefreshListener(() -> {
             loadData();
             swipeRefreshLayout.setRefreshing(false);
@@ -142,20 +142,15 @@ public class PartitionsFragment extends Fragment {
     }
 
     private String getSimpleAccess(String path) {
-        if (path.equals("/system") || path.equals("/vendor")) {
-            return "r";
-        } else if (path.equals("/data") || path.equals("/cache")) {
-            return "r/w";
-        } else {
-            return "r/w";
-        }
+        if (path.equals("/system") || path.equals("/vendor")) return "r";
+        else return "r/w";
     }
 
     private String getRealFilesystem(String path) {
         try {
             File realPath = new File(path).getCanonicalFile();
             String resolvedPath = realPath.getAbsolutePath();
-            Process process = Runtime.getRuntime().exec("cat /proc/self/mounts");
+            Process process = Runtime.getRuntime().exec("mount");
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
             String foundFs = "unknown";
@@ -172,7 +167,6 @@ public class PartitionsFragment extends Fragment {
             reader.close();
             return foundFs;
         } catch (Exception e) {
-            e.printStackTrace();
             return "unknown";
         }
     }
@@ -193,9 +187,7 @@ public class PartitionsFragment extends Fragment {
         tvFree.setText(formatStorageSize(partition.getFreeSpace(), "free"));
         tvTotal.setText(formatStorageSize(partition.getTotalSpace(), "total"));
         int progress = 0;
-        if (partition.getTotalSpace() > 0) {
-            progress = (int) ((partition.getUsedSpace() * 100) / partition.getTotalSpace());
-        }
+        if (partition.getTotalSpace() > 0) progress = (int) ((partition.getUsedSpace() * 100) / partition.getTotalSpace());
         progressBar.setProgress(progress);
         return view;
     }
@@ -231,7 +223,6 @@ public class PartitionsFragment extends Fragment {
             long usedBytes = totalBytes - availableBytes;
             return new MemoryInfo(usedBytes, availableBytes, totalBytes);
         } catch (Exception e) {
-            e.printStackTrace();
             return new MemoryInfo(0, 0, 0);
         }
     }
@@ -252,7 +243,6 @@ public class PartitionsFragment extends Fragment {
             long usedBytes = totalBytes - freeBytes;
             return new MemoryInfo(usedBytes, freeBytes, totalBytes);
         } catch (Exception e) {
-            e.printStackTrace();
             return new MemoryInfo(0, 0, 0);
         }
     }
@@ -278,9 +268,7 @@ public class PartitionsFragment extends Fragment {
         tvFree.setText(formatStorageSize((long) memoryInfo.getFree(), "free"));
         tvTotal.setText(formatStorageSize((long) memoryInfo.getTotal(), "total"));
         int progress = 0;
-        if (memoryInfo.getTotal() > 0) {
-            progress = (int) ((memoryInfo.getUsed() * 100) / memoryInfo.getTotal());
-        }
+        if (memoryInfo.getTotal() > 0) progress = (int) ((memoryInfo.getUsed() * 100) / memoryInfo.getTotal());
         progressBar.setProgress(progress);
         return view;
     }
