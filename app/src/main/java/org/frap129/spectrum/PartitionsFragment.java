@@ -171,7 +171,7 @@ public class PartitionsFragment extends Fragment {
             }
         }
         
-        return new PartitionInfo(name, path, type, access, "4.00 KiB", usedSpace, freeSpace, totalSpace);
+        return new PartitionInfo(name, path, type, access, usedSpace, freeSpace, totalSpace);
     }
 
     private View createPartitionView(PartitionInfo partition) {
@@ -179,7 +179,6 @@ public class PartitionsFragment extends Fragment {
         TextView tvName = view.findViewById(R.id.tvPartitionName);
         TextView tvType = view.findViewById(R.id.tvPartitionType);
         TextView tvAccess = view.findViewById(R.id.tvPartitionAccess);
-        TextView tvBlockSize = view.findViewById(R.id.tvBlockSize);
         TextView tvUsed = view.findViewById(R.id.tvUsedSpace);
         TextView tvFree = view.findViewById(R.id.tvFreeSpace);
         TextView tvTotal = view.findViewById(R.id.tvTotalSpace);
@@ -188,7 +187,6 @@ public class PartitionsFragment extends Fragment {
         tvName.setText(partition.getName());
         tvType.setText(partition.getType());
         tvAccess.setText(partition.getAccess());
-        tvBlockSize.setText(partition.getBlockSize());
         
         String usedText = formatStorageSize(partition.getUsedSpace(), "used");
         String freeText = formatStorageSize(partition.getFreeSpace(), "free");
@@ -339,17 +337,15 @@ public class PartitionsFragment extends Fragment {
         private String path;
         private String type;
         private String access;
-        private String blockSize;
         private long usedSpace;
         private long freeSpace;
         private long totalSpace;
 
-        public PartitionInfo(String name, String path, String type, String access, String blockSize, long usedSpace, long freeSpace, long totalSpace) {
+        public PartitionInfo(String name, String path, String type, String access, long usedSpace, long freeSpace, long totalSpace) {
             this.name = name;
             this.path = path;
             this.type = type;
             this.access = access;
-            this.blockSize = blockSize;
             this.usedSpace = usedSpace;
             this.freeSpace = freeSpace;
             this.totalSpace = totalSpace;
@@ -359,7 +355,6 @@ public class PartitionsFragment extends Fragment {
         public String getPath() { return path; }
         public String getType() { return type; }
         public String getAccess() { return access; }
-        public String getBlockSize() { return blockSize; }
         public long getUsedSpace() { return usedSpace; }
         public long getFreeSpace() { return freeSpace; }
         public long getTotalSpace() { return totalSpace; }
@@ -380,4 +375,4 @@ public class PartitionsFragment extends Fragment {
         public double getFree() { return free; }
         public double getTotal() { return total; }
     }
-}
+    }
