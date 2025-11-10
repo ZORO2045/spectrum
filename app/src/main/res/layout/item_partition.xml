@@ -7,8 +7,8 @@
     android:layout_marginBottom="12dp"
     app:cardCornerRadius="12dp"
     app:cardElevation="2dp"
-    app:cardBackgroundColor="#1AFFFFFF"
-    app:strokeColor="#33FFFFFF"
+    app:cardBackgroundColor="#2A1A1A1A"
+    app:strokeColor="#452B2B2B"
     app:strokeWidth="1dp">
 
     <LinearLayout
@@ -97,7 +97,7 @@
             android:layout_height="4dp"
             android:layout_marginBottom="8dp"
             android:indeterminate="false"
-            app:trackColor="#333333"
+            app:trackColor="#553399FF"
             app:indicatorColor="#B399FF" />
 
         <!-- Space Information -->
