@@ -7,9 +7,8 @@
     android:layout_marginBottom="12dp"
     app:cardCornerRadius="12dp"
     app:cardElevation="2dp"
-    app:cardBackgroundColor="#2A1A1A1A"
-    app:strokeColor="#452B2B2B"
-    app:strokeWidth="1dp">
+    app:cardBackgroundColor="#1E1E1E"
+    app:strokeWidth="0dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -35,7 +34,7 @@
             android:layout_height="4dp"
             android:layout_marginBottom="8dp"
             android:indeterminate="false"
-            app:trackColor="#553399FF"
+            app:trackColor="#334466"
             app:indicatorColor="#B399FF" />
 
         <!-- Memory Information -->
@@ -50,7 +49,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="0.0 GiB used"
+                android:text="0.0 GB used"
                 android:textColor="#B399FF"
                 android:textSize="12sp"
                 android:textStyle="bold" />
@@ -59,16 +58,16 @@
                 android:id="@+id/tvMemoryFree"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="0.0 GiB free"
-                android:textColor="#CCCCCC"
+                android:text="0.0 GB free"
+                android:textColor="#AAAAAA"
                 android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/tvMemoryTotal"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="0.0 GiB total"
-                android:textColor="#CCCCCC"
+                android:text="0.0 GB total"
+                android:textColor="#AAAAAA"
                 android:textSize="12sp"
                 android:layout_marginStart="8dp" />
 
