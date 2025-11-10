@@ -50,12 +50,15 @@ public class PartitionsFragment extends Fragment {
     }
 
     private void updatePartitionsInfo() {
-        partitionsContainer.removeAllViews();
-        List<PartitionInfo> partitions = getPartitionsInfo();
-        for (PartitionInfo partition : partitions) {
-            View partitionView = createPartitionView(partition);
-            partitionsContainer.addView(partitionView);
-        }
+        if (getActivity() == null) return;
+        getActivity().runOnUiThread(() -> {
+            partitionsContainer.removeAllViews();
+            List<PartitionInfo> partitions = getPartitionsInfo();
+            for (PartitionInfo partition : partitions) {
+                View partitionView = createPartitionView(partition);
+                partitionsContainer.addView(partitionView);
+            }
+        });
     }
 
     private List<PartitionInfo> getPartitionsInfo() {
@@ -106,32 +109,41 @@ public class PartitionsFragment extends Fragment {
         TextView tvFree = view.findViewById(R.id.tvFreeSpace);
         TextView tvTotal = view.findViewById(R.id.tvTotalSpace);
         LinearProgressIndicator progressBar = view.findViewById(R.id.progressBar);
+        
         tvName.setText(partition.getName());
         tvType.setText(partition.getType());
         tvAccess.setText(partition.getAccess());
         tvBlockSize.setText(partition.getBlockSize());
+        
         double usedGB = partition.getUsedSpace() / (1024.0 * 1024.0 * 1024.0);
         double freeGB = partition.getFreeSpace() / (1024.0 * 1024.0 * 1024.0);
         double totalGB = partition.getTotalSpace() / (1024.0 * 1024.0 * 1024.0);
+        
         tvUsed.setText(String.format("%.2f GiB used", usedGB));
         tvFree.setText(String.format("%.2f GiB free", freeGB));
         tvTotal.setText(String.format("%.2f GiB total", totalGB));
+        
         int progress = 0;
         if (totalGB > 0) progress = (int) ((usedGB / totalGB) * 100);
         progressBar.setProgress(progress);
+        
         return view;
     }
 
     private void updateMemoryInfo() {
-        memoryContainer.removeAllViews();
-        MemoryInfo ramInfo = getMemoryInfo();
-        View ramView = createMemoryView("Memory (RAM)", ramInfo, true);
-        memoryContainer.addView(ramView);
-        MemoryInfo swapInfo = getSwapInfo();
-        if (swapInfo.getTotal() > 0) {
-            View swapView = createMemoryView("Swap Memory", swapInfo, false);
-            memoryContainer.addView(swapView);
-        }
+        if (getActivity() == null) return;
+        getActivity().runOnUiThread(() -> {
+            memoryContainer.removeAllViews();
+            MemoryInfo ramInfo = getMemoryInfo();
+            View ramView = createMemoryView("Memory (RAM)", ramInfo, true);
+            memoryContainer.addView(ramView);
+            
+            MemoryInfo swapInfo = getSwapInfo();
+            if (swapInfo.getTotal() > 0) {
+                View swapView = createMemoryView("Swap Memory", swapInfo, false);
+                memoryContainer.addView(swapView);
+            }
+        });
     }
 
     private MemoryInfo getMemoryInfo() {
@@ -147,11 +159,15 @@ public class PartitionsFragment extends Fragment {
                 else if (line.startsWith("MemAvailable:")) availableMemory = parseMemInfoLine(line);
             }
             reader.close();
-            totalMemory = totalMemory / 1024 / 1024;
-            availableMemory = availableMemory / 1024 / 1024;
-            long usedMemory = totalMemory - availableMemory;
-            return new MemoryInfo(usedMemory, availableMemory, totalMemory);
+            
+            // Convert from KB to GB
+            double totalGB = totalMemory / (1024.0 * 1024.0);
+            double availableGB = availableMemory / (1024.0 * 1024.0);
+            double usedGB = totalGB - availableGB;
+            
+            return new MemoryInfo(usedGB, availableGB, totalGB);
         } catch (Exception e) {
+            e.printStackTrace();
             return new MemoryInfo(0, 0, 0);
         }
     }
@@ -167,11 +183,15 @@ public class PartitionsFragment extends Fragment {
                 else if (line.startsWith("SwapFree:")) freeSwap = parseMemInfoLine(line);
             }
             reader.close();
-            totalSwap = totalSwap / 1024 / 1024;
-            freeSwap = freeSwap / 1024 / 1024;
-            long usedSwap = totalSwap - freeSwap;
-            return new MemoryInfo(usedSwap, freeSwap, totalSwap);
+            
+            // Convert from KB to GB
+            double totalGB = totalSwap / (1024.0 * 1024.0);
+            double freeGB = freeSwap / (1024.0 * 1024.0);
+            double usedGB = totalGB - freeGB;
+            
+            return new MemoryInfo(usedGB, freeGB, totalGB);
         } catch (Exception e) {
+            e.printStackTrace();
             return new MemoryInfo(0, 0, 0);
         }
     }
@@ -192,20 +212,27 @@ public class PartitionsFragment extends Fragment {
         TextView tvFree = view.findViewById(R.id.tvMemoryFree);
         TextView tvTotal = view.findViewById(R.id.tvMemoryTotal);
         LinearProgressIndicator progressBar = view.findViewById(R.id.progressMemory);
+        
         tvTitle.setText(title);
         tvUsed.setText(String.format("%.1f GiB used", memoryInfo.getUsed()));
         tvFree.setText(String.format("%.1f GiB free", memoryInfo.getFree()));
         tvTotal.setText(String.format("%.1f GiB total", memoryInfo.getTotal()));
+        
         int progress = 0;
-        if (memoryInfo.getTotal() > 0) progress = (int) ((memoryInfo.getUsed() / memoryInfo.getTotal()) * 100);
+        if (memoryInfo.getTotal() > 0) {
+            progress = (int) ((memoryInfo.getUsed() / memoryInfo.getTotal()) * 100);
+        }
         progressBar.setProgress(progress);
+        
         return view;
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        if (handler != null && updateRunnable != null) handler.removeCallbacks(updateRunnable);
+        if (handler != null && updateRunnable != null) {
+            handler.removeCallbacks(updateRunnable);
+        }
     }
 
     private static class PartitionInfo {
@@ -254,4 +281,4 @@ public class PartitionsFragment extends Fragment {
         public double getFree() { return free; }
         public double getTotal() { return total; }
     }
-            }
+                                                }
