@@ -40,7 +40,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="8dp">
+            android:layout_marginBottom="12dp">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -64,11 +64,12 @@
         <com.google.android.material.progressindicator.LinearProgressIndicator
             android:id="@+id/progressBar"
             android:layout_width="match_parent"
-            android:layout_height="4dp"
-            android:layout_marginBottom="8dp"
+            android:layout_height="8dp"
+            android:layout_marginBottom="12dp"
             android:indeterminate="false"
             app:trackColor="#494458"
-            app:indicatorColor="#D0BCFD" />
+            app:indicatorColor="#D0BCFD"
+            app:trackThickness="8dp" />
 
         <!-- Space Information -->
         <LinearLayout
