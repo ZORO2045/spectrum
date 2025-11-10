@@ -33,6 +33,7 @@ public class PartitionsFragment extends Fragment {
         partitionsContainer = view.findViewById(R.id.partitionsContainer);
         memoryContainer = view.findViewById(R.id.memoryContainer);
         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
+        swipeRefreshLayout.setBackgroundColor(0x00000000);
         requestPermissions();
         setupSwipeRefresh();
         return view;
@@ -150,8 +151,7 @@ public class PartitionsFragment extends Fragment {
         try {
             File realPath = new File(path).getCanonicalFile();
             String resolvedPath = realPath.getAbsolutePath();
-            Process process = Runtime.getRuntime().exec("mount");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            BufferedReader reader = new BufferedReader(new FileReader("/proc/mounts"));
             String line;
             String foundFs = "unknown";
             while ((line = reader.readLine()) != null) {
@@ -159,8 +159,9 @@ public class PartitionsFragment extends Fragment {
                 if (parts.length >= 3) {
                     String mountPoint = parts[1];
                     String fsType = parts[2];
-                    if (resolvedPath.equals(mountPoint) || resolvedPath.startsWith(mountPoint + "/")) {
+                    if (resolvedPath.equals(mountPoint) || resolvedPath.startsWith(mountPoint + "/") || mountPoint.startsWith(resolvedPath + "/")) {
                         foundFs = fsType;
+                        break;
                     }
                 }
             }
