@@ -243,9 +243,11 @@ public class PartitionsFragment extends Fragment {
     }
 
     private void animateProgressBar(LinearProgressIndicator progressBar, PartitionInfo partition, int duration) {
-        int targetProgress = 0;
+        final int targetProgress;
         if (partition.getTotalSpace() > 0) {
             targetProgress = (int) ((partition.getUsedSpace() * 100) / partition.getTotalSpace());
+        } else {
+            targetProgress = 0;
         }
         
         progressBar.setProgress(0);
@@ -260,9 +262,11 @@ public class PartitionsFragment extends Fragment {
     }
 
     private void animateProgressBar(LinearProgressIndicator progressBar, MemoryInfo memoryInfo, int duration) {
-        int targetProgress = 0;
+        final int targetProgress;
         if (memoryInfo.getTotal() > 0) {
             targetProgress = (int) ((memoryInfo.getUsed() * 100) / memoryInfo.getTotal());
+        } else {
+            targetProgress = 0;
         }
         
         progressBar.setProgress(0);
