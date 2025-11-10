@@ -52,7 +52,11 @@ public class PartitionsFragment extends Fragment {
     }
 
     private void setupSwipeRefresh() {
-        swipeRefreshLayout.setOnRefreshListener(this::loadData);
+        swipeRefreshLayout.setEnabled(true);
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            loadData();
+            swipeRefreshLayout.setRefreshing(false);
+        });
         swipeRefreshLayout.setColorSchemeColors(0xFFB399FF);
         swipeRefreshLayout.setProgressBackgroundColorSchemeColor(0xFF1A1A1A);
     }
@@ -60,7 +64,6 @@ public class PartitionsFragment extends Fragment {
     private void loadData() {
         updatePartitionsInfo();
         updateMemoryInfo();
-        if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
     }
 
     private void updatePartitionsInfo() {
@@ -150,23 +153,28 @@ public class PartitionsFragment extends Fragment {
 
     private String getRealFilesystem(String path) {
         try {
-            Process process = Runtime.getRuntime().exec("cat /proc/mounts");
+            File realPath = new File(path).getCanonicalFile();
+            String resolvedPath = realPath.getAbsolutePath();
+            Process process = Runtime.getRuntime().exec("cat /proc/self/mounts");
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
+            String foundFs = "unknown";
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split("\\s+");
                 if (parts.length >= 3) {
                     String mountPoint = parts[1];
                     String fsType = parts[2];
-                    if (mountPoint.equals(path)) {
-                        reader.close();
-                        return fsType;
+                    if (resolvedPath.equals(mountPoint) || resolvedPath.startsWith(mountPoint + "/")) {
+                        foundFs = fsType;
                     }
                 }
             }
             reader.close();
-        } catch (Exception ignored) {}
-        return "fuse";
+            return foundFs;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "unknown";
+        }
     }
 
     private View createPartitionView(PartitionInfo partition) {
