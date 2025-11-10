@@ -189,31 +189,85 @@ public class PartitionsFragment extends Fragment {
 
     private String getRealAccess(String path) {
         try {
-            File dir = new File(path);
-            if (!dir.exists()) return "unknown";
+            Process process = Runtime.getRuntime().exec("mount");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
             
-            boolean canRead = dir.canRead();
-            boolean canWrite = dir.canWrite();
-            
-            if (canRead && canWrite) return "r/w";
-            else if (canRead) return "r";
-            else return "no access";
-            
+            while ((line = reader.readLine()) != null) {
+                if (line.contains(path)) {
+                    if (line.contains("rw")) {
+                        reader.close();
+                        return "r/w";
+                    } else if (line.contains("ro")) {
+                        reader.close();
+                        return "r";
+                    }
+                }
+            }
+            reader.close();
         } catch (Exception e) {
+        }
+        
+        return getSimpleAccess(path);
+    }
+
+    private String getSimpleAccess(String path) {
+        if (path.equals("/system") || path.equals("/vendor")) {
+            return "r";
+        } else if (path.equals("/data") || path.equals("/cache")) {
+            return "r/w";
+        } else if (path.contains("sdcard") || path.contains("storage")) {
+            return "r/w";
+        } else {
             return "unknown";
         }
     }
 
     private String getRealFilesystem(String path) {
         try {
-            Process process = Runtime.getRuntime().exec("stat -f -c %T " + path);
+            Process process = Runtime.getRuntime().exec("cat /proc/mounts");
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String fsType = reader.readLine();
-            reader.close();
+            String line;
             
-            if (fsType != null && !fsType.isEmpty()) {
-                return fsType;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split("\\s+");
+                if (parts.length >= 3) {
+                    String mountPoint = parts[1];
+                    String fsType = parts[2];
+                    
+                    if (mountPoint.equals(path)) {
+                        reader.close();
+                        return fsType;
+                    }
+                }
             }
+            reader.close();
+        } catch (Exception e) {
+        }
+        
+        try {
+            Process process = Runtime.getRuntime().exec("mount");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            
+            while ((line = reader.readLine()) != null) {
+                if (line.contains(" on " + path + " ")) {
+                    String[] parts = line.split("\\s+");
+                    for (int i = 0; i < parts.length; i++) {
+                        if (parts[i].equals("on") && i + 1 < parts.length && parts[i + 1].equals(path)) {
+                            if (i + 3 < parts.length) {
+                                String fsType = parts[i + 3];
+                                if (fsType.contains("(")) {
+                                    fsType = fsType.substring(0, fsType.indexOf("("));
+                                }
+                                reader.close();
+                                return fsType;
+                            }
+                        }
+                    }
+                }
+            }
+            reader.close();
         } catch (Exception e) {
         }
         
