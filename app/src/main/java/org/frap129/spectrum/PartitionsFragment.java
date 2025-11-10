@@ -14,6 +14,7 @@ import com.google.android.material.progressindicator.LinearProgressIndicator;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -78,14 +79,14 @@ public class PartitionsFragment extends Fragment {
     private List<PartitionInfo> getPartitionsInfo() {
         List<PartitionInfo> partitions = new ArrayList<>();
         
-        partitions.add(getPartitionInfo("/system", "System", "ext4", "r"));
-        partitions.add(getPartitionInfo("/data", "Data", "ext4", "r/w"));
-        partitions.add(getPartitionInfo("/cache", "Cache", "ext4", "r/w"));
-        partitions.add(getPartitionInfo("/vendor", "Vendor", "ext4", "r"));
+        partitions.add(getPartitionInfo("/system", "System"));
+        partitions.add(getPartitionInfo("/data", "Data"));
+        partitions.add(getPartitionInfo("/cache", "Cache"));
+        partitions.add(getPartitionInfo("/vendor", "Vendor"));
         
         File dataDir = new File("/data");
         if (dataDir.exists()) {
-            partitions.add(getPartitionInfo("/data", "Internal Storage", "ext4", "r/w"));
+            partitions.add(getPartitionInfo("/data", "Internal Storage"));
         }
         
         findExternalStorage(partitions);
@@ -116,7 +117,7 @@ public class PartitionsFragment extends Fragment {
                 if (totalSpace > 1024 * 1024) {
                     String name = getStorageName(path);
                     if (!isPartitionAlreadyAdded(partitions, name)) {
-                        partitions.add(getPartitionInfo(path, name, "fuse", "r/w"));
+                        partitions.add(getPartitionInfo(path, name));
                     }
                 }
             }
@@ -134,7 +135,7 @@ public class PartitionsFragment extends Fragment {
                     if (totalSpace > 1024 * 1024) {
                         String name = "SD Card - " + file.getName();
                         if (!isPartitionAlreadyAdded(partitions, name)) {
-                            partitions.add(getPartitionInfo(path, name, "fuse", "r/w"));
+                            partitions.add(getPartitionInfo(path, name));
                         }
                     }
                 }
@@ -169,11 +170,13 @@ public class PartitionsFragment extends Fragment {
         return false;
     }
 
-    private PartitionInfo getPartitionInfo(String path, String name, String type, String access) {
+    private PartitionInfo getPartitionInfo(String path, String name) {
         File partition = new File(path);
         long totalSpace = 0;
         long freeSpace = 0;
         long usedSpace = 0;
+        String realAccess = getRealAccess(path);
+        String realFilesystem = getRealFilesystem(path);
         
         if (partition.exists() && partition.isDirectory()) {
             try {
@@ -185,7 +188,85 @@ public class PartitionsFragment extends Fragment {
             }
         }
         
-        return new PartitionInfo(name, path, type, access, usedSpace, freeSpace, totalSpace);
+        return new PartitionInfo(name, path, realFilesystem, realAccess, usedSpace, freeSpace, totalSpace);
+    }
+
+    private String getRealAccess(String path) {
+        try {
+            Process process = Runtime.getRuntime().exec("mount");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            
+            while ((line = reader.readLine()) != null) {
+                if (line.contains(path)) {
+                    if (line.contains("rw")) {
+                        reader.close();
+                        return "r/w";
+                    } else if (line.contains("ro")) {
+                        reader.close();
+                        return "r";
+                    }
+                }
+            }
+            reader.close();
+            
+            return getSimpleAccess(path);
+        } catch (Exception e) {
+            return getSimpleAccess(path);
+        }
+    }
+
+    private String getSimpleAccess(String path) {
+        try {
+            File dir = new File(path);
+            boolean canRead = dir.canRead();
+            boolean canWrite = dir.canWrite();
+            
+            if (canRead && canWrite) return "r/w";
+            else if (canRead) return "r";
+            else return "no access";
+        } catch (Exception e) {
+            return "unknown";
+        }
+    }
+
+    private String getRealFilesystem(String path) {
+        try {
+            Process process = Runtime.getRuntime().exec("mount");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            
+            while ((line = reader.readLine()) != null) {
+                if (line.contains(path)) {
+                    String[] parts = line.split("\\s+");
+                    if (parts.length >= 5) {
+                        String fsType = parts[4];
+                        if (fsType.contains("(")) {
+                            fsType = fsType.substring(0, fsType.indexOf("("));
+                        }
+                        reader.close();
+                        return fsType;
+                    }
+                }
+            }
+            reader.close();
+            
+            return getSimpleFilesystem(path);
+        } catch (Exception e) {
+            return getSimpleFilesystem(path);
+        }
+    }
+
+    private String getSimpleFilesystem(String path) {
+        if (path.contains("sdcard") || path.contains("storage") || path.contains("emulated")) {
+            return "fuse";
+        } else if (path.equals("/system") || path.equals("/vendor")) {
+            return "ext4";
+        } else if (path.equals("/data") || path.equals("/cache")) {
+            return "ext4";
+        } else {
+            return "unknown";
+        }
     }
 
     private View createPartitionView(PartitionInfo partition) {
@@ -381,4 +462,4 @@ public class PartitionsFragment extends Fragment {
         public double getFree() { return free; }
         public double getTotal() { return total; }
     }
-}
+                }
