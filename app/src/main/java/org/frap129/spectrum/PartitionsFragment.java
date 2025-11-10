@@ -101,7 +101,11 @@ public class PartitionsFragment extends Fragment {
             "/mnt/external_sd",
             "/mnt/sdcard",
             "/sdcard",
-            "/storage/emulated/0"
+            "/storage/emulated/0",
+            "/mnt/media_rw",
+            "/storage/emulated",
+            "/storage/UsbDriveA",
+            "/storage/UsbDriveB"
         };
         
         for (String path : possiblePaths) {
@@ -110,7 +114,15 @@ public class PartitionsFragment extends Fragment {
                 long totalSpace = dir.getTotalSpace();
                 long freeSpace = dir.getFreeSpace();
                 
-                if (totalSpace > 1024 * 1024) {
+                boolean isDuplicate = false;
+                for (PartitionInfo p : partitions) {
+                    if (p.getPath().equals(path)) {
+                        isDuplicate = true;
+                        break;
+                    }
+                }
+                
+                if (!isDuplicate && totalSpace > 1024 * 1024) {
                     String name = getStorageName(path);
                     if (!isPartitionAlreadyAdded(partitions, name)) {
                         partitions.add(getPartitionInfo(path, name));
@@ -128,8 +140,43 @@ public class PartitionsFragment extends Fragment {
                     String path = file.getAbsolutePath();
                     long totalSpace = file.getTotalSpace();
                     
-                    if (totalSpace > 1024 * 1024) {
+                    boolean isDuplicate = false;
+                    for (PartitionInfo p : partitions) {
+                        if (p.getPath().equals(path)) {
+                            isDuplicate = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!isDuplicate && totalSpace > 1024 * 1024) {
                         String name = "SD Card - " + file.getName();
+                        if (!isPartitionAlreadyAdded(partitions, name)) {
+                            partitions.add(getPartitionInfo(path, name));
+                        }
+                    }
+                }
+            }
+        }
+        
+        File mntDir = new File("/mnt");
+        if (mntDir.exists() && mntDir.listFiles() != null) {
+            for (File file : mntDir.listFiles()) {
+                if (file.isDirectory() && (file.getName().contains("sdcard") || 
+                    file.getName().contains("external") || file.getName().contains("media"))) {
+                    
+                    String path = file.getAbsolutePath();
+                    long totalSpace = file.getTotalSpace();
+                    
+                    boolean isDuplicate = false;
+                    for (PartitionInfo p : partitions) {
+                        if (p.getPath().equals(path)) {
+                            isDuplicate = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!isDuplicate && totalSpace > 1024 * 1024) {
+                        String name = "External - " + file.getName();
                         if (!isPartitionAlreadyAdded(partitions, name)) {
                             partitions.add(getPartitionInfo(path, name));
                         }
@@ -140,20 +187,17 @@ public class PartitionsFragment extends Fragment {
     }
 
     private String getStorageName(String path) {
-        switch (path) {
-            case "/storage/sdcard1":
-            case "/storage/extSdCard":
-            case "/storage/external_sd":
-                return "External SD Card";
-            case "/storage/emulated/0":
-            case "/sdcard":
-                return "Internal Storage";
-            default:
-                if (path.contains("sdcard") || path.contains("external")) {
-                    return "SD Card";
-                } else {
-                    return "Storage - " + new File(path).getName();
-                }
+        if (path.equals("/storage/sdcard1") || path.equals("/storage/extSdCard") || 
+            path.equals("/storage/external_sd") || path.contains("media_rw")) {
+            return "External SD Card";
+        } else if (path.equals("/storage/emulated/0") || path.equals("/sdcard")) {
+            return "Internal Storage";
+        } else if (path.contains("UsbDrive")) {
+            return "USB Storage";
+        } else if (path.contains("sdcard") || path.contains("external")) {
+            return "SD Card";
+        } else {
+            return "Storage - " + new File(path).getName();
         }
     }
 
