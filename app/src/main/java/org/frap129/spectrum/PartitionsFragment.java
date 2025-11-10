@@ -80,9 +80,6 @@ public class PartitionsFragment extends Fragment {
         partitions.add(getPartitionInfo("/cache", "Cache"));
         partitions.add(getPartitionInfo("/vendor", "Vendor"));
         
-        String internalPath = getInternalStoragePath();
-        partitions.add(getPartitionInfo(internalPath, "Internal Storage"));
-        
         findExternalStorage(partitions);
         
         return partitions;
@@ -102,7 +99,9 @@ public class PartitionsFragment extends Fragment {
             "/mnt/sdcard",
             "/mnt/media_rw",
             "/storage/UsbDriveA",
-            "/storage/UsbDriveB"
+            "/storage/UsbDriveB",
+            "/mnt/usb_storage",
+            "/storage/usb"
         };
         
         for (String path : possiblePaths) {
@@ -147,7 +146,7 @@ public class PartitionsFragment extends Fragment {
                     }
                     
                     if (!isDuplicate && totalSpace > 1024 * 1024) {
-                        String name = "External SD - " + file.getName();
+                        String name = "External Storage - " + file.getName();
                         if (!isPartitionAlreadyAdded(partitions, name)) {
                             partitions.add(getPartitionInfo(path, name));
                         }
@@ -160,8 +159,8 @@ public class PartitionsFragment extends Fragment {
         if (mntDir.exists() && mntDir.listFiles() != null) {
             for (File file : mntDir.listFiles()) {
                 if (file.isDirectory() && (file.getName().contains("sdcard") || 
-                    file.getName().contains("external") || file.getName().contains("media")) &&
-                    !file.getAbsolutePath().equals(internalStoragePath)) {
+                    file.getName().contains("external") || file.getName().contains("media") ||
+                    file.getName().contains("usb")) && !file.getAbsolutePath().equals(internalStoragePath)) {
                     
                     String path = file.getAbsolutePath();
                     long totalSpace = file.getTotalSpace();
@@ -201,14 +200,10 @@ public class PartitionsFragment extends Fragment {
     }
 
     private String getStorageName(String path) {
-        String internalPath = getInternalStoragePath();
-        
-        if (path.equals(internalPath)) {
-            return "Internal Storage";
-        } else if (path.equals("/storage/sdcard1") || path.equals("/storage/extSdCard") || 
-                   path.equals("/storage/external_sd") || path.contains("media_rw")) {
-            return "External SD Card";
-        } else if (path.contains("UsbDrive")) {
+        if (path.equals("/storage/sdcard1") || path.equals("/storage/extSdCard") || 
+            path.equals("/storage/external_sd") || path.contains("media_rw")) {
+            return "SD Card";
+        } else if (path.contains("UsbDrive") || path.contains("usb")) {
             return "USB Storage";
         } else if (path.contains("sdcard") || path.contains("external")) {
             return "External Storage";
