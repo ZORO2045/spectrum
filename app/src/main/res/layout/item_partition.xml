@@ -26,24 +26,12 @@
 
             <TextView
                 android:id="@+id/tvPartitionName"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:text="Partition Name"
                 android:textColor="@android:color/white"
                 android:textSize="16sp"
                 android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvPartitionType"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="ext4"
-                android:textColor="#B399FF"
-                android:textSize="12sp"
-                android:background="@drawable/bg_partition_type"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="4dp" />
 
         </LinearLayout>
 
