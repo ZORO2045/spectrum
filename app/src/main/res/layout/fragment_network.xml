@@ -39,9 +39,6 @@
             android:layout_height="wrap_content"
             android:text="All Apps"
             style="@style/FilterChip"
-            app:chipBackgroundColor="@color/chip_background_color"
-            app:checkedIcon="@null"
-            app:checkable="true"
             app:checked="true" />
 
         <com.google.android.material.chip.Chip
@@ -49,32 +46,28 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="User Apps"
-            style="@style/FilterChip"
-            app:chipBackgroundColor="@color/chip_background_color" />
+            style="@style/FilterChip" />
 
         <com.google.android.material.chip.Chip
             android:id="@+id/chipSystem"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="System Apps"
-            style="@style/FilterChip"
-            app:chipBackgroundColor="@color/chip_background_color" />
+            style="@style/FilterChip" />
 
         <com.google.android.material.chip.Chip
             android:id="@+id/chipBlocked"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Blocked"
-            style="@style/FilterChip"
-            app:chipBackgroundColor="@color/chip_background_color" />
+            style="@style/FilterChip" />
 
         <com.google.android.material.chip.Chip
             android:id="@+id/chipAllowed"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Allowed"
-            style="@style/FilterChip"
-            app:chipBackgroundColor="@color/chip_background_color" />
+            style="@style/FilterChip" />
 
     </com.google.android.material.chip.ChipGroup>
 
