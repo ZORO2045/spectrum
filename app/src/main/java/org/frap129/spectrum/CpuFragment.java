@@ -15,6 +15,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 
 import java.io.BufferedReader;
@@ -110,7 +111,7 @@ public class CpuFragment extends Fragment {
     }
 
     private void showDisableCoresWarning() {
-        new android.app.AlertDialog.Builder(requireContext())
+        new AlertDialog.Builder(requireContext(), R.style.SpectrumDialogTheme)
             .setTitle("Disable CPU Cores")
             .setMessage("Disabling CPU cores may significantly impact performance and system stability. This action is recommended for advanced users only.")
             .setPositiveButton("Disable Cores", (dialog, which) -> disableAllCores())
@@ -325,4 +326,4 @@ public class CpuFragment extends Fragment {
             handler.removeCallbacks(cpuMonitorRunnable);
         }
     }
-                              }
+                             }
