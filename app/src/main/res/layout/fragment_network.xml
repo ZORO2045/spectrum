@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -15,6 +16,67 @@
         android:textColor="@android:color/white"
         android:gravity="center"
         android:layout_marginBottom="16dp" />
+
+    <androidx.appcompat.widget.SearchView
+        android:id="@+id/searchView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/search_background"
+        app:queryHint="Search apps..." />
+
+    <com.google.android.material.chip.ChipGroup
+        android:id="@+id/filterChipGroup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        app:singleSelection="true"
+        app:selectionRequired="true">
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipAll"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="All Apps"
+            style="@style/FilterChip"
+            app:chipBackgroundColor="@color/chip_background_color"
+            app:checkedIcon="@null"
+            app:checkable="true"
+            app:checked="true" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipUser"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="User Apps"
+            style="@style/FilterChip"
+            app:chipBackgroundColor="@color/chip_background_color" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipSystem"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="System Apps"
+            style="@style/FilterChip"
+            app:chipBackgroundColor="@color/chip_background_color" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipBlocked"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Blocked"
+            style="@style/FilterChip"
+            app:chipBackgroundColor="@color/chip_background_color" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipAllowed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Allowed"
+            style="@style/FilterChip"
+            app:chipBackgroundColor="@color/chip_background_color" />
+
+    </com.google.android.material.chip.ChipGroup>
 
     <ProgressBar
         android:id="@+id/progressBar"
