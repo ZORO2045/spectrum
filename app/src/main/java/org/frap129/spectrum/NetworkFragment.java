@@ -98,6 +98,8 @@ public class NetworkFragment extends Fragment {
     }
 
     private void setupFilterChips() {
+        chipAll.setChecked(true);
+        
         chipAll.setOnCheckedChangeListener((button, isChecked) -> {
             if (isChecked) { currentFilter = "ALL"; filterApps(); }
         });
@@ -328,4 +330,4 @@ public class NetworkFragment extends Fragment {
         android.graphics.drawable.Drawable icon;
         boolean internetBlocked;
     }
-}
+                                       }
