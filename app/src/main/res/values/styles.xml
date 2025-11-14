@@ -64,7 +64,7 @@
         <item name="chipBackgroundColor">@color/chip_background_color</item>
         <item name="android:textColor">@color/chip_text_color</item>
         <item name="checkedIcon">@null</item>
-        <item name="chipMinTouchTargetSize">0</item>
+        <item name="chipMinTouchTargetSize">0dp</item>
         <item name="chipStrokeWidth">1dp</item>
     </style>
 
