@@ -101,20 +101,55 @@ public class NetworkFragment extends Fragment {
         chipAll.setChecked(true);
         
         chipAll.setOnCheckedChangeListener((button, isChecked) -> {
-            if (isChecked) { currentFilter = "ALL"; filterApps(); }
+            if (isChecked) { 
+                currentFilter = "ALL"; 
+                updateChipAppearance();
+                filterApps(); 
+            }
         });
         chipUser.setOnCheckedChangeListener((button, isChecked) -> {
-            if (isChecked) { currentFilter = "USER"; filterApps(); }
+            if (isChecked) { 
+                currentFilter = "USER"; 
+                updateChipAppearance();
+                filterApps(); 
+            }
         });
         chipSystem.setOnCheckedChangeListener((button, isChecked) -> {
-            if (isChecked) { currentFilter = "SYSTEM"; filterApps(); }
+            if (isChecked) { 
+                currentFilter = "SYSTEM"; 
+                updateChipAppearance();
+                filterApps(); 
+            }
         });
         chipBlocked.setOnCheckedChangeListener((button, isChecked) -> {
-            if (isChecked) { currentFilter = "BLOCKED"; filterApps(); }
+            if (isChecked) { 
+                currentFilter = "BLOCKED"; 
+                updateChipAppearance();
+                filterApps(); 
+            }
         });
         chipAllowed.setOnCheckedChangeListener((button, isChecked) -> {
-            if (isChecked) { currentFilter = "ALLOWED"; filterApps(); }
+            if (isChecked) { 
+                currentFilter = "ALLOWED"; 
+                updateChipAppearance();
+                filterApps(); 
+            }
         });
+        
+        updateChipAppearance();
+    }
+
+    private void updateChipAppearance() {
+        Chip[] chips = {chipAll, chipUser, chipSystem, chipBlocked, chipAllowed};
+        for (Chip chip : chips) {
+            if (chip.isChecked()) {
+                chip.setChipBackgroundColorResource(R.color.colorAccent);
+                chip.setTextColor(getResources().getColor(R.color.colorPrimaryDark));
+            } else {
+                chip.setChipBackgroundColorResource(R.color.chip_background_color);
+                chip.setTextColor(getResources().getColor(R.color.chip_text_color));
+            }
+        }
     }
 
     private void filterApps() {
@@ -218,7 +253,10 @@ public class NetworkFragment extends Fragment {
         
         Shell.SU.run(commands);
         app.internetBlocked = block;
-        filterApps();
+        
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            filterApps();
+        }, 100);
     }
 
     private class NetworkAdapter extends RecyclerView.Adapter<NetworkAdapter.ViewHolder> {
@@ -257,18 +295,18 @@ public class NetworkFragment extends Fragment {
                 holder.status.setText("BLOCKED");
                 holder.status.setTextColor(0xFFFF5722);
                 holder.status.setBackgroundResource(R.drawable.bg_blocked_chip);
-                holder.blockSwitch.setChecked(false);
             } else {
                 holder.status.setText("ALLOWED");
                 holder.status.setTextColor(0xFF4CAF50);
                 holder.status.setBackgroundResource(R.drawable.bg_allowed_chip);
-                holder.blockSwitch.setChecked(true);
             }
 
             holder.blockSwitch.setOnCheckedChangeListener(null);
             holder.blockSwitch.setChecked(!app.internetBlocked);
             holder.blockSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                blockInternetCompletely(app, !isChecked);
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    blockInternetCompletely(app, !isChecked);
+                }, 50);
             });
 
             holder.itemView.setOnClickListener(v -> {
@@ -330,4 +368,4 @@ public class NetworkFragment extends Fragment {
         android.graphics.drawable.Drawable icon;
         boolean internetBlocked;
     }
-                                       }
+}
