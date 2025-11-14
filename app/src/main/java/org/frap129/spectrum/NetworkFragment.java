@@ -1,12 +1,8 @@
 package org.frap129.spectrum;
 
-import android.app.usage.NetworkStats;
-import android.app.usage.NetworkStatsManager;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
-import android.net.ConnectivityManager;
-import android.net.NetworkPolicyManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -28,7 +24,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 import eu.chainfire.libsuperuser.Shell;
@@ -44,7 +39,9 @@ public class NetworkFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_network, container, false);
+        // استخدم layout بسيط مؤقتاً
+        View view = inflater.inflate(R.layout.fragment_network, container, false);
+        return view;
     }
 
     @Override
@@ -80,17 +77,17 @@ public class NetworkFragment extends Fragment {
                     appInfo.name = packageInfo.loadLabel(pm).toString();
                     appInfo.icon = packageInfo.loadIcon(pm);
                     
-                    // Get current network restrictions
-                    appInfo.wifiRestricted = isWifiRestricted(appInfo.packageName);
-                    appInfo.dataRestricted = isDataRestricted(appInfo.packageName);
-                    appInfo.vpnRestricted = isVpnRestricted(appInfo.packageName);
-                    appInfo.backgroundRestricted = isBackgroundRestricted(appInfo.packageName);
+                    // قيم افتراضية
+                    appInfo.wifiRestricted = false;
+                    appInfo.dataRestricted = false;
+                    appInfo.vpnRestricted = false;
+                    appInfo.backgroundRestricted = false;
 
                     appList.add(appInfo);
                 }
             }
 
-            // Sort alphabetically
+            // ترتيب أبجدي
             Collections.sort(appList, (o1, o2) -> o1.name.compareToIgnoreCase(o2.name));
 
             new Handler(Looper.getMainLooper()).post(() -> {
@@ -114,71 +111,54 @@ public class NetworkFragment extends Fragment {
     }
 
     private boolean isVpnRestricted(String packageName) {
-        // Check if app is blocked from using VPN
         List<String> result = Shell.SU.run("ip rule show | grep " + packageName);
         return result != null && !result.isEmpty();
     }
 
     private boolean isBackgroundRestricted(String packageName) {
-        try {
-            NetworkStatsManager statsManager = (NetworkStatsManager) requireContext().getSystemService(Context.NETWORK_STATS_SERVICE);
-            // Implementation for background data restriction check
-            return false;
-        } catch (Exception e) {
-            return false;
-        }
+        return false;
     }
 
     private void setWifiRestriction(String packageName, boolean restricted) {
+        List<String> commands = new ArrayList<>();
         if (restricted) {
-            Shell.SU.run(
-                "iptables -A OUTPUT -m owner --uid-owner $(pm list packages -U " + packageName + " | cut -d: -f3) -j DROP",
-                "iptables -A INPUT -m owner --uid-owner $(pm list packages -U " + packageName + " | cut -d: -f3) -j DROP"
-            );
+            commands.add("iptables -A OUTPUT -m owner --uid-owner $(pm list packages -U " + packageName + " | cut -d: -f3) -j DROP");
+            commands.add("iptables -A INPUT -m owner --uid-owner $(pm list packages -U " + packageName + " | cut -d: -f3) -j DROP");
         } else {
-            Shell.SU.run(
-                "iptables -D OUTPUT -m owner --uid-owner $(pm list packages -U " + packageName + " | cut -d: -f3) -j DROP",
-                "iptables -D INPUT -m owner --uid-owner $(pm list packages -U " + packageName + " | cut -d: -f3) -j DROP"
-            );
+            commands.add("iptables -D OUTPUT -m owner --uid-owner $(pm list packages -U " + packageName + " | cut -d: -f3) -j DROP");
+            commands.add("iptables -D INPUT -m owner --uid-owner $(pm list packages -U " + packageName + " | cut -d: -f3) -j DROP");
         }
+        Shell.SU.run(commands);
     }
 
     private void setDataRestriction(String packageName, boolean restricted) {
+        List<String> commands = new ArrayList<>();
         if (restricted) {
-            Shell.SU.run(
-                "iptables -A OUTPUT -m owner --uid-owner $(pm list packages -U " + packageName + " | cut -d: -f3) -j DROP",
-                "iptables -A INPUT -m owner --uid-owner $(pm list packages -U " + packageName + " | cut -d: -f3) -j DROP"
-            );
+            commands.add("iptables -A OUTPUT -m owner --uid-owner $(pm list packages -U " + packageName + " | cut -d: -f3) -j DROP");
         } else {
-            Shell.SU.run(
-                "iptables -D OUTPUT -m owner --uid-owner $(pm list packages -U " + packageName + " | cut -d: -f3) -j DROP",
-                "iptables -D INPUT -m owner --uid-owner $(pm list packages -U " + packageName + " | cut -d: -f3) -j DROP"
-            );
+            commands.add("iptables -D OUTPUT -m owner --uid-owner $(pm list packages -U " + packageName + " | cut -d: -f3) -j DROP");
         }
+        Shell.SU.run(commands);
     }
 
     private void setVpnRestriction(String packageName, boolean restricted) {
+        List<String> commands = new ArrayList<>();
         if (restricted) {
-            Shell.SU.run(
-                "ip rule add uidrange $(pm list packages -U " + packageName + " | cut -d: -f3) lookup main"
-            );
+            commands.add("ip rule add uidrange $(pm list packages -U " + packageName + " | cut -d: -f3) lookup main");
         } else {
-            Shell.SU.run(
-                "ip rule del uidrange $(pm list packages -U " + packageName + " | cut -d: -f3) lookup main"
-            );
+            commands.add("ip rule del uidrange $(pm list packages -U " + packageName + " | cut -d: -f3) lookup main");
         }
+        Shell.SU.run(commands);
     }
 
     private void setBackgroundRestriction(String packageName, boolean restricted) {
+        List<String> commands = new ArrayList<>();
         if (restricted) {
-            Shell.SU.run(
-                "cmd appops set " + packageName + " RUN_IN_BACKGROUND ignore"
-            );
+            commands.add("cmd appops set " + packageName + " RUN_IN_BACKGROUND ignore");
         } else {
-            Shell.SU.run(
-                "cmd appops set " + packageName + " RUN_IN_BACKGROUND allow"
-            );
+            commands.add("cmd appops set " + packageName + " RUN_IN_BACKGROUND allow");
         }
+        Shell.SU.run(commands);
     }
 
     private class NetworkAdapter extends RecyclerView.Adapter<NetworkAdapter.ViewHolder> {
@@ -276,4 +256,4 @@ public class NetworkFragment extends Fragment {
         boolean vpnRestricted;
         boolean backgroundRestricted;
     }
-}
+    }
