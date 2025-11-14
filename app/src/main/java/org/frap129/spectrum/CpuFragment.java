@@ -139,7 +139,7 @@ public class CpuFragment extends Fragment {
                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                     if (fromUser) {
                         long selectedFreq = availableFrequencies.get(progress);
-                        currentFreqText.setText("Selected: " + formatFrequency(selectedFreq));
+                        currentFreqText.setText("Selected: " + formatFrequency(selectedFreq) + " | Current: " + formatFrequency(getCurrentFrequency()));
                     }
                 }
 
@@ -155,8 +155,12 @@ public class CpuFragment extends Fragment {
             int progress = cpuFreqSeekBar.getProgress();
             if (progress >= 0 && progress < availableFrequencies.size()) {
                 long selectedFreq = availableFrequencies.get(progress);
-                setCpuFrequency(selectedFreq);
-                Toast.makeText(requireContext(), "Frequency set to: " + formatFrequency(selectedFreq), Toast.LENGTH_SHORT).show();
+                boolean success = setCpuFrequency(selectedFreq);
+                if (success) {
+                    Toast.makeText(requireContext(), "Frequency set to: " + formatFrequency(selectedFreq), Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(requireContext(), "Failed to set frequency!", Toast.LENGTH_SHORT).show();
+                }
             }
         });
 
@@ -199,13 +203,16 @@ public class CpuFragment extends Fragment {
 
     private void toggleCpuBoost() {
         String newValue = isBoostEnabled ? "0" : "1";
-        Shell.SU.run("echo " + newValue + " > /sys/devices/system/cpu/cpufreq/boost");
+        List<String> result = Shell.SU.run("echo " + newValue + " > /sys/devices/system/cpu/cpufreq/boost");
         
-        isBoostEnabled = !isBoostEnabled;
-        updateBoostState();
-        
-        Toast.makeText(requireContext(), "CPU Boost " + (isBoostEnabled ? "enabled" : "disabled"), 
-                      Toast.LENGTH_SHORT).show();
+        if (result != null) {
+            isBoostEnabled = !isBoostEnabled;
+            updateBoostState();
+            Toast.makeText(requireContext(), "CPU Boost " + (isBoostEnabled ? "enabled" : "disabled"), 
+                          Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(requireContext(), "Failed to change boost state!", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void loadCpuInfo() {
@@ -281,60 +288,97 @@ public class CpuFragment extends Fragment {
     }
 
     private void setCpuGovernor(String governor) {
-        Shell.SU.run("echo " + governor + " > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
-        Toast.makeText(requireContext(), "Governor set to: " + governor, Toast.LENGTH_SHORT).show();
+        List<String> result = Shell.SU.run("echo " + governor + " > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
+        if (result != null) {
+            Toast.makeText(requireContext(), "Governor set to: " + governor, Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(requireContext(), "Failed to set governor!", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private List<Long> getAvailableFrequencies() {
         List<Long> frequencies = new ArrayList<>();
-        try {
-            File freqFile = new File("/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies");
-            if (freqFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(freqFile));
-                String line = reader.readLine();
-                reader.close();
-                if (line != null) {
-                    String[] freqs = line.split(" ");
-                    for (String freq : freqs) {
-                        if (!freq.trim().isEmpty()) {
-                            frequencies.add(Long.parseLong(freq.trim()));
+        String[] freqPaths = {
+            "/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies",
+            "/sys/devices/system/cpu/cpufreq/policy0/scaling_available_frequencies"
+        };
+        
+        for (String path : freqPaths) {
+            try {
+                File freqFile = new File(path);
+                if (freqFile.exists()) {
+                    BufferedReader reader = new BufferedReader(new FileReader(freqFile));
+                    String line = reader.readLine();
+                    reader.close();
+                    if (line != null) {
+                        String[] freqs = line.split(" ");
+                        for (String freq : freqs) {
+                            if (!freq.trim().isEmpty()) {
+                                frequencies.add(Long.parseLong(freq.trim()));
+                            }
                         }
+                        frequencies.sort((a, b) -> Long.compare(b, a));
+                        break;
                     }
-                    frequencies.sort((a, b) -> Long.compare(b, a));
                 }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
         return frequencies;
     }
 
     private long getCurrentFrequency() {
-        try {
-            File freqFile = new File("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq");
-            if (freqFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(freqFile));
-                String freq = reader.readLine();
-                reader.close();
-                return freq != null ? Long.parseLong(freq) : 0;
+        String[] freqPaths = {
+            "/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq",
+            "/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq",
+            "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq"
+        };
+        
+        for (String path : freqPaths) {
+            try {
+                File freqFile = new File(path);
+                if (freqFile.exists()) {
+                    BufferedReader reader = new BufferedReader(new FileReader(freqFile));
+                    String freq = reader.readLine();
+                    reader.close();
+                    if (freq != null) {
+                        return Long.parseLong(freq);
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
         return 0;
     }
 
-    private void setCpuFrequency(long frequency) {
+    private boolean setCpuFrequency(long frequency) {
         List<String> commands = new ArrayList<>();
-        commands.add("echo " + frequency + " > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq");
-        commands.add("echo " + frequency + " > /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq");
+        String[] maxFreqPaths = {
+            "/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq",
+            "/sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq",
+            "/sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed"
+        };
+        
+        for (String path : maxFreqPaths) {
+            File testFile = new File(path);
+            if (testFile.exists()) {
+                commands.add("echo " + frequency + " > " + path);
+            }
+        }
         
         int totalCores = getTotalCores();
         for (int i = 0; i < totalCores; i++) {
-            commands.add("echo " + frequency + " > /sys/devices/system/cpu/cpu" + i + "/cpufreq/scaling_max_freq");
+            String corePath = "/sys/devices/system/cpu/cpu" + i + "/cpufreq/scaling_max_freq";
+            File coreFile = new File(corePath);
+            if (coreFile.exists()) {
+                commands.add("echo " + frequency + " > " + corePath);
+            }
         }
         
-        Shell.SU.run(commands);
+        List<String> results = Shell.SU.run(commands);
+        return results != null && !results.isEmpty();
     }
 
     private void resetCpuFrequency() {
@@ -343,13 +387,40 @@ public class CpuFragment extends Fragment {
             long defaultMinFreq = availableFrequencies.get(availableFrequencies.size() - 1);
             
             List<String> commands = new ArrayList<>();
-            commands.add("echo " + defaultMaxFreq + " > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq");
-            commands.add("echo " + defaultMinFreq + " > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq");
+            
+            String[] maxPaths = {
+                "/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq",
+                "/sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq"
+            };
+            
+            String[] minPaths = {
+                "/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq",
+                "/sys/devices/system/cpu/cpufreq/policy0/scaling_min_freq"
+            };
+            
+            for (String path : maxPaths) {
+                File testFile = new File(path);
+                if (testFile.exists()) {
+                    commands.add("echo " + defaultMaxFreq + " > " + path);
+                }
+            }
+            
+            for (String path : minPaths) {
+                File testFile = new File(path);
+                if (testFile.exists()) {
+                    commands.add("echo " + defaultMinFreq + " > " + path);
+                }
+            }
             
             Shell.SU.run(commands);
             
             int progress = getFrequencyProgress(defaultMaxFreq, availableFrequencies);
             cpuFreqSeekBar.setProgress(progress);
+            
+            handler.postDelayed(() -> {
+                currentFreq = getCurrentFrequency();
+                currentFreqText.setText("Current: " + formatFrequency(currentFreq));
+            }, 500);
         }
     }
 
