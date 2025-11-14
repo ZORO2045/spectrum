@@ -1,6 +1,5 @@
 package org.frap129.spectrum;
 
-import android.app.AlertDialog;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -111,9 +110,9 @@ public class CpuFragment extends Fragment {
     }
 
     private void showDisableCoresWarning() {
-        new AlertDialog.Builder(requireContext())
-            .setTitle("Disable Cores Warning")
-            .setMessage("Disabling CPU cores may affect performance and system stability. Are you sure you want to continue?")
+        new android.app.AlertDialog.Builder(requireContext())
+            .setTitle("Disable CPU Cores")
+            .setMessage("Disabling CPU cores may significantly impact performance and system stability. This action is recommended for advanced users only.")
             .setPositiveButton("Disable Cores", (dialog, which) -> disableAllCores())
             .setNegativeButton("Cancel", null)
             .show();
@@ -326,4 +325,4 @@ public class CpuFragment extends Fragment {
             handler.removeCallbacks(cpuMonitorRunnable);
         }
     }
-}
+                              }
