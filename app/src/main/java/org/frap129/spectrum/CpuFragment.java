@@ -1,5 +1,6 @@
 package org.frap129.spectrum;
 
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -9,7 +10,6 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -30,21 +30,14 @@ import eu.chainfire.libsuperuser.Shell;
 public class CpuFragment extends Fragment {
 
     private Spinner cpuGovernorSpinner;
-    private TextView currentGovernorText, minFreqText, maxFreqText, currentFreqText;
+    private TextView currentGovernorText;
     private TextView activeCoresText, cpuArchText, cpuCoresText, cpuTempText;
-    private SeekBar cpuFreqSeekBar;
     private Button enableAllCoresBtn, disableAllCoresBtn;
-    private Button applyFreqBtn, resetFreqBtn;
     private View boostCard;
     private Button boostToggleBtn;
 
     private Handler handler = new Handler(Looper.getMainLooper());
     private Runnable cpuMonitorRunnable;
-
-    private long minFreq = 0;
-    private long maxFreq = 0;
-    private long currentFreq = 0;
-    private List<Long> availableFrequencies = new ArrayList<>();
     private boolean isBoostEnabled = false;
 
     @Nullable
@@ -64,25 +57,18 @@ public class CpuFragment extends Fragment {
     private void initViews(View view) {
         cpuGovernorSpinner = view.findViewById(R.id.cpuGovernorSpinner);
         currentGovernorText = view.findViewById(R.id.currentGovernorText);
-        minFreqText = view.findViewById(R.id.minFreqText);
-        maxFreqText = view.findViewById(R.id.maxFreqText);
-        currentFreqText = view.findViewById(R.id.currentFreqText);
         activeCoresText = view.findViewById(R.id.activeCoresText);
         cpuArchText = view.findViewById(R.id.cpuArchText);
         cpuCoresText = view.findViewById(R.id.cpuCoresText);
         cpuTempText = view.findViewById(R.id.cpuTempText);
-        cpuFreqSeekBar = view.findViewById(R.id.cpuFreqSeekBar);
         enableAllCoresBtn = view.findViewById(R.id.enableAllCoresBtn);
         disableAllCoresBtn = view.findViewById(R.id.disableAllCoresBtn);
-        applyFreqBtn = view.findViewById(R.id.applyFreqBtn);
-        resetFreqBtn = view.findViewById(R.id.resetFreqBtn);
         boostCard = view.findViewById(R.id.boostCard);
         boostToggleBtn = view.findViewById(R.id.boostToggleBtn);
     }
 
     private void setupCpuControls() {
         setupGovernorSpinner();
-        setupFrequencyControls();
         setupCoreControls();
         checkAndSetupCpuBoost();
         loadCpuInfo();
@@ -119,60 +105,18 @@ public class CpuFragment extends Fragment {
         }
     }
 
-    private void setupFrequencyControls() {
-        availableFrequencies = getAvailableFrequencies();
-        if (!availableFrequencies.isEmpty()) {
-            minFreq = availableFrequencies.get(availableFrequencies.size() - 1);
-            maxFreq = availableFrequencies.get(0);
-            
-            minFreqText.setText(formatFrequency(minFreq));
-            maxFreqText.setText(formatFrequency(maxFreq));
-            
-            cpuFreqSeekBar.setMax(availableFrequencies.size() - 1);
-            
-            currentFreq = getCurrentFrequency();
-            int progress = getFrequencyProgress(currentFreq, availableFrequencies);
-            cpuFreqSeekBar.setProgress(progress);
-            
-            cpuFreqSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-                @Override
-                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                    if (fromUser) {
-                        long selectedFreq = availableFrequencies.get(progress);
-                        currentFreqText.setText("Selected: " + formatFrequency(selectedFreq) + " | Current: " + formatFrequency(getCurrentFrequency()));
-                    }
-                }
-
-                @Override
-                public void onStartTrackingTouch(SeekBar seekBar) {}
-
-                @Override
-                public void onStopTrackingTouch(SeekBar seekBar) {}
-            });
-        }
-
-        applyFreqBtn.setOnClickListener(v -> {
-            int progress = cpuFreqSeekBar.getProgress();
-            if (progress >= 0 && progress < availableFrequencies.size()) {
-                long selectedFreq = availableFrequencies.get(progress);
-                boolean success = setCpuFrequency(selectedFreq);
-                if (success) {
-                    Toast.makeText(requireContext(), "Frequency set to: " + formatFrequency(selectedFreq), Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(requireContext(), "Failed to set frequency!", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
-
-        resetFreqBtn.setOnClickListener(v -> {
-            resetCpuFrequency();
-            Toast.makeText(requireContext(), "Frequency reset to default", Toast.LENGTH_SHORT).show();
-        });
-    }
-
     private void setupCoreControls() {
         enableAllCoresBtn.setOnClickListener(v -> enableAllCores());
-        disableAllCoresBtn.setOnClickListener(v -> disableAllCores());
+        disableAllCoresBtn.setOnClickListener(v -> showDisableCoresWarning());
+    }
+
+    private void showDisableCoresWarning() {
+        new AlertDialog.Builder(requireContext())
+            .setTitle("Disable Cores Warning")
+            .setMessage("Disabling CPU cores may affect performance and system stability. Are you sure you want to continue?")
+            .setPositiveButton("Disable Cores", (dialog, which) -> disableAllCores())
+            .setNegativeButton("Cancel", null)
+            .show();
     }
 
     private void checkAndSetupCpuBoost() {
@@ -237,9 +181,6 @@ public class CpuFragment extends Fragment {
     }
 
     private void updateCpuInfo() {
-        currentFreq = getCurrentFrequency();
-        currentFreqText.setText("Current: " + formatFrequency(currentFreq));
-
         String currentGov = getCurrentGovernor();
         currentGovernorText.setText("Current: " + currentGov);
 
@@ -294,143 +235,6 @@ public class CpuFragment extends Fragment {
         } else {
             Toast.makeText(requireContext(), "Failed to set governor!", Toast.LENGTH_SHORT).show();
         }
-    }
-
-    private List<Long> getAvailableFrequencies() {
-        List<Long> frequencies = new ArrayList<>();
-        String[] freqPaths = {
-            "/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies",
-            "/sys/devices/system/cpu/cpufreq/policy0/scaling_available_frequencies"
-        };
-        
-        for (String path : freqPaths) {
-            try {
-                File freqFile = new File(path);
-                if (freqFile.exists()) {
-                    BufferedReader reader = new BufferedReader(new FileReader(freqFile));
-                    String line = reader.readLine();
-                    reader.close();
-                    if (line != null) {
-                        String[] freqs = line.split(" ");
-                        for (String freq : freqs) {
-                            if (!freq.trim().isEmpty()) {
-                                frequencies.add(Long.parseLong(freq.trim()));
-                            }
-                        }
-                        frequencies.sort((a, b) -> Long.compare(b, a));
-                        break;
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        return frequencies;
-    }
-
-    private long getCurrentFrequency() {
-        String[] freqPaths = {
-            "/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq",
-            "/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq",
-            "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq"
-        };
-        
-        for (String path : freqPaths) {
-            try {
-                File freqFile = new File(path);
-                if (freqFile.exists()) {
-                    BufferedReader reader = new BufferedReader(new FileReader(freqFile));
-                    String freq = reader.readLine();
-                    reader.close();
-                    if (freq != null) {
-                        return Long.parseLong(freq);
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        return 0;
-    }
-
-    private boolean setCpuFrequency(long frequency) {
-        List<String> commands = new ArrayList<>();
-        String[] maxFreqPaths = {
-            "/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq",
-            "/sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq",
-            "/sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed"
-        };
-        
-        for (String path : maxFreqPaths) {
-            File testFile = new File(path);
-            if (testFile.exists()) {
-                commands.add("echo " + frequency + " > " + path);
-            }
-        }
-        
-        int totalCores = getTotalCores();
-        for (int i = 0; i < totalCores; i++) {
-            String corePath = "/sys/devices/system/cpu/cpu" + i + "/cpufreq/scaling_max_freq";
-            File coreFile = new File(corePath);
-            if (coreFile.exists()) {
-                commands.add("echo " + frequency + " > " + corePath);
-            }
-        }
-        
-        List<String> results = Shell.SU.run(commands);
-        return results != null && !results.isEmpty();
-    }
-
-    private void resetCpuFrequency() {
-        if (!availableFrequencies.isEmpty()) {
-            long defaultMaxFreq = availableFrequencies.get(0);
-            long defaultMinFreq = availableFrequencies.get(availableFrequencies.size() - 1);
-            
-            List<String> commands = new ArrayList<>();
-            
-            String[] maxPaths = {
-                "/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq",
-                "/sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq"
-            };
-            
-            String[] minPaths = {
-                "/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq",
-                "/sys/devices/system/cpu/cpufreq/policy0/scaling_min_freq"
-            };
-            
-            for (String path : maxPaths) {
-                File testFile = new File(path);
-                if (testFile.exists()) {
-                    commands.add("echo " + defaultMaxFreq + " > " + path);
-                }
-            }
-            
-            for (String path : minPaths) {
-                File testFile = new File(path);
-                if (testFile.exists()) {
-                    commands.add("echo " + defaultMinFreq + " > " + path);
-                }
-            }
-            
-            Shell.SU.run(commands);
-            
-            int progress = getFrequencyProgress(defaultMaxFreq, availableFrequencies);
-            cpuFreqSeekBar.setProgress(progress);
-            
-            handler.postDelayed(() -> {
-                currentFreq = getCurrentFrequency();
-                currentFreqText.setText("Current: " + formatFrequency(currentFreq));
-            }, 500);
-        }
-    }
-
-    private int getFrequencyProgress(long frequency, List<Long> frequencies) {
-        for (int i = 0; i < frequencies.size(); i++) {
-            if (frequencies.get(i).equals(frequency)) {
-                return i;
-            }
-        }
-        return 0;
     }
 
     private String getCpuArchitecture() {
@@ -513,16 +317,6 @@ public class CpuFragment extends Fragment {
             }
         }
         return "N/A";
-    }
-
-    private String formatFrequency(long frequency) {
-        if (frequency >= 1000000) {
-            return (frequency / 1000000) + " MHz";
-        } else if (frequency >= 1000) {
-            return (frequency / 1000) + " KHz";
-        } else {
-            return frequency + " Hz";
-        }
     }
 
     @Override
