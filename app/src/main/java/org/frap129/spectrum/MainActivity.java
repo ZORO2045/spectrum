@@ -58,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
         viewPager = findViewById(R.id.viewPager);
         tabLayout = findViewById(R.id.tabLayout);
         
-        viewPager.setOffscreenPageLimit(5);
+        viewPager.setOffscreenPageLimit(6);
         
         ViewPagerAdapter adapter = new ViewPagerAdapter(this);
         viewPager.setAdapter(adapter);
@@ -81,10 +81,36 @@ public class MainActivity extends AppCompatActivity {
                     tab.setText("Kill Camera");
                     break;   
                 case 5:
+                    tab.setText("Network");
+                    break;
+                case 6:
                     tab.setText("About");
                     break;
             }
         }).attach();
+
+        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                SpannableString spannable = new SpannableString(tab.getText());
+                spannable.setSpan(new ForegroundColorSpan(getResources().getColor(R.color.colorAccent)), 0, spannable.length(), 0);
+                tab.setText(spannable);
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+                SpannableString spannable = new SpannableString(tab.getText());
+                spannable.setSpan(new ForegroundColorSpan(Color.WHITE), 0, spannable.length(), 0);
+                tab.setText(spannable);
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+                SpannableString spannable = new SpannableString(tab.getText());
+                spannable.setSpan(new ForegroundColorSpan(getResources().getColor(R.color.colorAccent)), 0, spannable.length(), 0);
+                tab.setText(spannable);
+            }
+        });
         
         new Handler().postDelayed(() -> {
             try {
@@ -115,6 +141,8 @@ public class MainActivity extends AppCompatActivity {
                     case 4:
                         return new KillCameraFragment(); 
                     case 5:
+                        return new NetworkFragment();
+                    case 6:
                         return new AboutFragment(); 
                     default:
                         return new PartitionsFragment();
@@ -127,7 +155,7 @@ public class MainActivity extends AppCompatActivity {
         
         @Override
         public int getItemCount() {
-            return 6;
+            return 7;
         }
     }
 
@@ -204,4 +232,4 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "Error showing root warning", e);
         }
     }
-                    }
+                                 }
