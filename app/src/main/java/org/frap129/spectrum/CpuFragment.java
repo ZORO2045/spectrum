@@ -34,6 +34,9 @@ public class CpuFragment extends Fragment {
     private TextView activeCoresText, cpuArchText, cpuCoresText, cpuTempText;
     private SeekBar cpuFreqSeekBar;
     private Button enableAllCoresBtn, disableAllCoresBtn;
+    private Button applyFreqBtn, resetFreqBtn;
+    private View boostCard;
+    private Button boostToggleBtn;
 
     private Handler handler = new Handler(Looper.getMainLooper());
     private Runnable cpuMonitorRunnable;
@@ -41,6 +44,8 @@ public class CpuFragment extends Fragment {
     private long minFreq = 0;
     private long maxFreq = 0;
     private long currentFreq = 0;
+    private List<Long> availableFrequencies = new ArrayList<>();
+    private boolean isBoostEnabled = false;
 
     @Nullable
     @Override
@@ -69,12 +74,17 @@ public class CpuFragment extends Fragment {
         cpuFreqSeekBar = view.findViewById(R.id.cpuFreqSeekBar);
         enableAllCoresBtn = view.findViewById(R.id.enableAllCoresBtn);
         disableAllCoresBtn = view.findViewById(R.id.disableAllCoresBtn);
+        applyFreqBtn = view.findViewById(R.id.applyFreqBtn);
+        resetFreqBtn = view.findViewById(R.id.resetFreqBtn);
+        boostCard = view.findViewById(R.id.boostCard);
+        boostToggleBtn = view.findViewById(R.id.boostToggleBtn);
     }
 
     private void setupCpuControls() {
         setupGovernorSpinner();
         setupFrequencyControls();
         setupCoreControls();
+        checkAndSetupCpuBoost();
         loadCpuInfo();
     }
 
@@ -102,7 +112,6 @@ public class CpuFragment extends Fragment {
             public void onNothingSelected(AdapterView<?> parent) {}
         });
 
-        // Set current governor
         String currentGov = getCurrentGovernor();
         int position = governors.indexOf(currentGov);
         if (position >= 0) {
@@ -111,28 +120,26 @@ public class CpuFragment extends Fragment {
     }
 
     private void setupFrequencyControls() {
-        // Get available frequencies
-        List<Long> frequencies = getAvailableFrequencies();
-        if (!frequencies.isEmpty()) {
-            minFreq = frequencies.get(frequencies.size() - 1); // Min is last
-            maxFreq = frequencies.get(0); // Max is first
+        availableFrequencies = getAvailableFrequencies();
+        if (!availableFrequencies.isEmpty()) {
+            minFreq = availableFrequencies.get(availableFrequencies.size() - 1);
+            maxFreq = availableFrequencies.get(0);
             
             minFreqText.setText(formatFrequency(minFreq));
             maxFreqText.setText(formatFrequency(maxFreq));
             
-            cpuFreqSeekBar.setMax(frequencies.size() - 1);
+            cpuFreqSeekBar.setMax(availableFrequencies.size() - 1);
             
-            // Set current frequency
             currentFreq = getCurrentFrequency();
-            int progress = getFrequencyProgress(currentFreq, frequencies);
+            int progress = getFrequencyProgress(currentFreq, availableFrequencies);
             cpuFreqSeekBar.setProgress(progress);
             
             cpuFreqSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                     if (fromUser) {
-                        long selectedFreq = frequencies.get(progress);
-                        setCpuFrequency(selectedFreq);
+                        long selectedFreq = availableFrequencies.get(progress);
+                        currentFreqText.setText("Selected: " + formatFrequency(selectedFreq));
                     }
                 }
 
@@ -143,6 +150,20 @@ public class CpuFragment extends Fragment {
                 public void onStopTrackingTouch(SeekBar seekBar) {}
             });
         }
+
+        applyFreqBtn.setOnClickListener(v -> {
+            int progress = cpuFreqSeekBar.getProgress();
+            if (progress >= 0 && progress < availableFrequencies.size()) {
+                long selectedFreq = availableFrequencies.get(progress);
+                setCpuFrequency(selectedFreq);
+                Toast.makeText(requireContext(), "Frequency set to: " + formatFrequency(selectedFreq), Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        resetFreqBtn.setOnClickListener(v -> {
+            resetCpuFrequency();
+            Toast.makeText(requireContext(), "Frequency reset to default", Toast.LENGTH_SHORT).show();
+        });
     }
 
     private void setupCoreControls() {
@@ -150,12 +171,47 @@ public class CpuFragment extends Fragment {
         disableAllCoresBtn.setOnClickListener(v -> disableAllCores());
     }
 
+    private void checkAndSetupCpuBoost() {
+        File boostFile = new File("/sys/devices/system/cpu/cpufreq/boost");
+        if (boostFile.exists()) {
+            boostCard.setVisibility(View.VISIBLE);
+            updateBoostState();
+            
+            boostToggleBtn.setOnClickListener(v -> toggleCpuBoost());
+        }
+    }
+
+    private void updateBoostState() {
+        try {
+            File boostFile = new File("/sys/devices/system/cpu/cpufreq/boost");
+            BufferedReader reader = new BufferedReader(new FileReader(boostFile));
+            String current = reader.readLine();
+            reader.close();
+            
+            isBoostEnabled = "1".equals(current);
+            boostToggleBtn.setText(isBoostEnabled ? "Disable Boost" : "Enable Boost");
+            boostToggleBtn.setBackgroundTintList(getResources().getColorStateList(
+                isBoostEnabled ? R.color.colorAccent : android.R.color.darker_gray));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void toggleCpuBoost() {
+        String newValue = isBoostEnabled ? "0" : "1";
+        Shell.SU.run("echo " + newValue + " > /sys/devices/system/cpu/cpufreq/boost");
+        
+        isBoostEnabled = !isBoostEnabled;
+        updateBoostState();
+        
+        Toast.makeText(requireContext(), "CPU Boost " + (isBoostEnabled ? "enabled" : "disabled"), 
+                      Toast.LENGTH_SHORT).show();
+    }
+
     private void loadCpuInfo() {
-        // CPU Architecture
         String arch = getCpuArchitecture();
         cpuArchText.setText(arch);
 
-        // CPU Cores
         int totalCores = getTotalCores();
         cpuCoresText.setText(String.valueOf(totalCores));
 
@@ -174,23 +230,18 @@ public class CpuFragment extends Fragment {
     }
 
     private void updateCpuInfo() {
-        // Update current frequency
         currentFreq = getCurrentFrequency();
         currentFreqText.setText("Current: " + formatFrequency(currentFreq));
 
-        // Update current governor
         String currentGov = getCurrentGovernor();
         currentGovernorText.setText("Current: " + currentGov);
 
-        // Update active cores
         updateActiveCores();
 
-        // Update temperature
         String temp = getCpuTemperature();
         cpuTempText.setText(temp);
     }
 
-    // CPU Control Methods
     private List<String> getAvailableGovernors() {
         List<String> governors = new ArrayList<>();
         try {
@@ -249,7 +300,6 @@ public class CpuFragment extends Fragment {
                             frequencies.add(Long.parseLong(freq.trim()));
                         }
                     }
-                    // Sort descending
                     frequencies.sort((a, b) -> Long.compare(b, a));
                 }
             }
@@ -275,7 +325,32 @@ public class CpuFragment extends Fragment {
     }
 
     private void setCpuFrequency(long frequency) {
-        Shell.SU.run("echo " + frequency + " > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq");
+        List<String> commands = new ArrayList<>();
+        commands.add("echo " + frequency + " > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq");
+        commands.add("echo " + frequency + " > /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq");
+        
+        int totalCores = getTotalCores();
+        for (int i = 0; i < totalCores; i++) {
+            commands.add("echo " + frequency + " > /sys/devices/system/cpu/cpu" + i + "/cpufreq/scaling_max_freq");
+        }
+        
+        Shell.SU.run(commands);
+    }
+
+    private void resetCpuFrequency() {
+        if (!availableFrequencies.isEmpty()) {
+            long defaultMaxFreq = availableFrequencies.get(0);
+            long defaultMinFreq = availableFrequencies.get(availableFrequencies.size() - 1);
+            
+            List<String> commands = new ArrayList<>();
+            commands.add("echo " + defaultMaxFreq + " > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq");
+            commands.add("echo " + defaultMinFreq + " > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq");
+            
+            Shell.SU.run(commands);
+            
+            int progress = getFrequencyProgress(defaultMaxFreq, availableFrequencies);
+            cpuFreqSeekBar.setProgress(progress);
+        }
     }
 
     private int getFrequencyProgress(long frequency, List<Long> frequencies) {
@@ -315,7 +390,6 @@ public class CpuFragment extends Fragment {
                     e.printStackTrace();
                 }
             } else {
-                // If online file doesn't exist, core is probably always online
                 activeCores++;
             }
         }
@@ -334,7 +408,6 @@ public class CpuFragment extends Fragment {
 
     private void disableAllCores() {
         int totalCores = getTotalCores();
-        // Keep at least one core active
         for (int i = 1; i < totalCores; i++) {
             Shell.SU.run("echo 0 > /sys/devices/system/cpu/cpu" + i + "/online");
         }
@@ -343,22 +416,30 @@ public class CpuFragment extends Fragment {
     }
 
     private String getCpuTemperature() {
-        try {
-            File tempFile = new File("/sys/class/thermal/thermal_zone0/temp");
-            if (tempFile.exists()) {
-                BufferedReader reader = new BufferedReader(new FileReader(tempFile));
-                String temp = reader.readLine();
-                reader.close();
-                if (temp != null) {
-                    int tempValue = Integer.parseInt(temp.trim());
-                    if (tempValue > 1000) {
-                        tempValue = tempValue / 1000;
+        String[] tempPaths = {
+            "/sys/class/thermal/thermal_zone0/temp",
+            "/sys/class/hwmon/hwmon0/temp1_input",
+            "/sys/devices/virtual/thermal/thermal_zone0/temp"
+        };
+        
+        for (String path : tempPaths) {
+            try {
+                File tempFile = new File(path);
+                if (tempFile.exists()) {
+                    BufferedReader reader = new BufferedReader(new FileReader(tempFile));
+                    String temp = reader.readLine();
+                    reader.close();
+                    if (temp != null) {
+                        int tempValue = Integer.parseInt(temp.trim());
+                        if (tempValue > 1000) {
+                            tempValue = tempValue / 1000;
+                        }
+                        return tempValue + "°C";
                     }
-                    return tempValue + "°C";
                 }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
         return "N/A";
     }
