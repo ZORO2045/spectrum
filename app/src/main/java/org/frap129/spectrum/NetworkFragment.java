@@ -9,7 +9,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -18,7 +20,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.widget.SearchView;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -37,7 +38,7 @@ public class NetworkFragment extends Fragment {
     private RecyclerView appsRecyclerView;
     private ProgressBar progressBar;
     private TextView emptyText;
-    private SearchView searchView;
+    private EditText searchEditText;
     private ChipGroup filterChipGroup;
     private Chip chipAll, chipUser, chipSystem, chipBlocked, chipAllowed;
     
@@ -68,7 +69,7 @@ public class NetworkFragment extends Fragment {
         appsRecyclerView = view.findViewById(R.id.appsRecyclerView);
         progressBar = view.findViewById(R.id.progressBar);
         emptyText = view.findViewById(R.id.emptyText);
-        searchView = view.findViewById(R.id.searchView);
+        searchEditText = view.findViewById(R.id.searchEditText);
         filterChipGroup = view.findViewById(R.id.filterChipGroup);
         chipAll = view.findViewById(R.id.chipAll);
         chipUser = view.findViewById(R.id.chipUser);
@@ -82,67 +83,78 @@ public class NetworkFragment extends Fragment {
     }
 
     private void setupSearchView() {
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+        searchEditText.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                searchEditText.setHint("");
+            } else {
+                searchEditText.setHint("Search apps...");
+            }
+        });
+
+        searchEditText.addTextChangedListener(new android.text.TextWatcher() {
             @Override
-            public boolean onQueryTextSubmit(String query) {
-                return false;
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                currentQuery = s.toString().toLowerCase();
+                filterApps();
             }
 
             @Override
-            public boolean onQueryTextChange(String newText) {
-                currentQuery = newText.toLowerCase();
-                filterApps();
-                return true;
-            }
+            public void afterTextChanged(android.text.Editable s) {}
         });
     }
 
     private void setupFilterChips() {
         chipAll.setChecked(true);
         
-        chipAll.setOnCheckedChangeListener((button, isChecked) -> {
-            if (isChecked) { 
-                currentFilter = "ALL"; 
-                updateChipAppearance();
-                filterApps(); 
+        chipAll.setOnClickListener(v -> {
+            if (!chipAll.isChecked()) {
+                setActiveChip(chipAll);
+                currentFilter = "ALL";
+                filterApps();
             }
         });
-        chipUser.setOnCheckedChangeListener((button, isChecked) -> {
-            if (isChecked) { 
-                currentFilter = "USER"; 
-                updateChipAppearance();
-                filterApps(); 
+
+        chipUser.setOnClickListener(v -> {
+            if (!chipUser.isChecked()) {
+                setActiveChip(chipUser);
+                currentFilter = "USER";
+                filterApps();
             }
         });
-        chipSystem.setOnCheckedChangeListener((button, isChecked) -> {
-            if (isChecked) { 
-                currentFilter = "SYSTEM"; 
-                updateChipAppearance();
-                filterApps(); 
+
+        chipSystem.setOnClickListener(v -> {
+            if (!chipSystem.isChecked()) {
+                setActiveChip(chipSystem);
+                currentFilter = "SYSTEM";
+                filterApps();
             }
         });
-        chipBlocked.setOnCheckedChangeListener((button, isChecked) -> {
-            if (isChecked) { 
-                currentFilter = "BLOCKED"; 
-                updateChipAppearance();
-                filterApps(); 
+
+        chipBlocked.setOnClickListener(v -> {
+            if (!chipBlocked.isChecked()) {
+                setActiveChip(chipBlocked);
+                currentFilter = "BLOCKED";
+                filterApps();
             }
         });
-        chipAllowed.setOnCheckedChangeListener((button, isChecked) -> {
-            if (isChecked) { 
-                currentFilter = "ALLOWED"; 
-                updateChipAppearance();
-                filterApps(); 
+
+        chipAllowed.setOnClickListener(v -> {
+            if (!chipAllowed.isChecked()) {
+                setActiveChip(chipAllowed);
+                currentFilter = "ALLOWED";
+                filterApps();
             }
         });
-        
-        updateChipAppearance();
     }
 
-    private void updateChipAppearance() {
+    private void setActiveChip(Chip activeChip) {
         Chip[] chips = {chipAll, chipUser, chipSystem, chipBlocked, chipAllowed};
         for (Chip chip : chips) {
-            if (chip.isChecked()) {
+            chip.setChecked(chip == activeChip);
+            if (chip == activeChip) {
                 chip.setChipBackgroundColorResource(R.color.colorAccent);
                 chip.setTextColor(getResources().getColor(R.color.colorPrimaryDark));
             } else {
@@ -340,7 +352,7 @@ public class NetworkFragment extends Fragment {
         String status = app.internetBlocked ? "BLOCKED ❌" : "ALLOWED ✅";
         String type = app.isSystemApp ? "System App" : "User App";
         
-        new AlertDialog.Builder(requireContext(), R.style.SpectrumDialogTheme)
+        AlertDialog dialog = new AlertDialog.Builder(requireContext(), R.style.SpectrumDialogTheme)
             .setTitle(app.name)
             .setMessage(
                 "Package: " + app.packageName + "\n" +
@@ -350,8 +362,11 @@ public class NetworkFragment extends Fragment {
                 "Internet access is " + (app.internetBlocked ? "completely blocked" : "fully allowed") + " for this app."
             )
             .setPositiveButton("OK", null)
-            .setNeutralButton("Refresh", (dialog, which) -> loadAllApps())
+            .setNeutralButton("Refresh", (dialogInterface, which) -> loadAllApps())
             .show();
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(R.color.colorAccent));
+        dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setTextColor(getResources().getColor(R.color.colorAccent));
     }
 
     @Override
