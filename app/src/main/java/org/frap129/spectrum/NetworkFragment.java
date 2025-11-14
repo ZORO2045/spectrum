@@ -1,6 +1,5 @@
 package org.frap129.spectrum;
 
-import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -14,6 +13,7 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -39,9 +39,7 @@ public class NetworkFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        // استخدم layout بسيط مؤقتاً
-        View view = inflater.inflate(R.layout.fragment_network, container, false);
-        return view;
+        return inflater.inflate(R.layout.fragment_network, container, false);
     }
 
     @Override
@@ -76,8 +74,8 @@ public class NetworkFragment extends Fragment {
                     appInfo.packageName = packageInfo.packageName;
                     appInfo.name = packageInfo.loadLabel(pm).toString();
                     appInfo.icon = packageInfo.loadIcon(pm);
+                    appInfo.uid = packageInfo.uid;
                     
-                    // قيم افتراضية
                     appInfo.wifiRestricted = false;
                     appInfo.dataRestricted = false;
                     appInfo.vpnRestricted = false;
@@ -87,7 +85,6 @@ public class NetworkFragment extends Fragment {
                 }
             }
 
-            // ترتيب أبجدي
             Collections.sort(appList, (o1, o2) -> o1.name.compareToIgnoreCase(o2.name));
 
             new Handler(Looper.getMainLooper()).post(() -> {
@@ -100,63 +97,62 @@ public class NetworkFragment extends Fragment {
         }).start();
     }
 
-    private boolean isWifiRestricted(String packageName) {
-        List<String> result = Shell.SU.run("iptables -L | grep " + packageName);
-        return result != null && !result.isEmpty();
-    }
-
-    private boolean isDataRestricted(String packageName) {
-        List<String> result = Shell.SU.run("iptables -L | grep " + packageName);
-        return result != null && !result.isEmpty();
-    }
-
-    private boolean isVpnRestricted(String packageName) {
-        List<String> result = Shell.SU.run("ip rule show | grep " + packageName);
-        return result != null && !result.isEmpty();
-    }
-
-    private boolean isBackgroundRestricted(String packageName) {
-        return false;
-    }
-
-    private void setWifiRestriction(String packageName, boolean restricted) {
+    private void setWifiRestriction(AppInfo app, boolean restricted) {
         List<String> commands = new ArrayList<>();
         if (restricted) {
-            commands.add("iptables -A OUTPUT -m owner --uid-owner $(pm list packages -U " + packageName + " | cut -d: -f3) -j DROP");
-            commands.add("iptables -A INPUT -m owner --uid-owner $(pm list packages -U " + packageName + " | cut -d: -f3) -j DROP");
+            commands.add("ndc firewall set_uid_rule mobile " + app.uid + " deny");
+            commands.add("ndc firewall set_uid_rule wifi " + app.uid + " deny");
+            commands.add("cmd appops set " + app.packageName + " WIFI_SCAN deny");
+            Toast.makeText(requireContext(), "WiFi blocked for " + app.name, Toast.LENGTH_SHORT).show();
         } else {
-            commands.add("iptables -D OUTPUT -m owner --uid-owner $(pm list packages -U " + packageName + " | cut -d: -f3) -j DROP");
-            commands.add("iptables -D INPUT -m owner --uid-owner $(pm list packages -U " + packageName + " | cut -d: -f3) -j DROP");
+            commands.add("ndc firewall set_uid_rule mobile " + app.uid + " allow");
+            commands.add("ndc firewall set_uid_rule wifi " + app.uid + " allow");
+            commands.add("cmd appops set " + app.packageName + " WIFI_SCAN allow");
+            Toast.makeText(requireContext(), "WiFi allowed for " + app.name, Toast.LENGTH_SHORT).show();
         }
         Shell.SU.run(commands);
     }
 
-    private void setDataRestriction(String packageName, boolean restricted) {
+    private void setDataRestriction(AppInfo app, boolean restricted) {
         List<String> commands = new ArrayList<>();
         if (restricted) {
-            commands.add("iptables -A OUTPUT -m owner --uid-owner $(pm list packages -U " + packageName + " | cut -d: -f3) -j DROP");
+            commands.add("ndc firewall set_uid_rule mobile " + app.uid + " deny");
+            commands.add("cmd appops set " + app.packageName + " CHANGE_NETWORK_STATE deny");
+            Toast.makeText(requireContext(), "Mobile data blocked for " + app.name, Toast.LENGTH_SHORT).show();
         } else {
-            commands.add("iptables -D OUTPUT -m owner --uid-owner $(pm list packages -U " + packageName + " | cut -d: -f3) -j DROP");
+            commands.add("ndc firewall set_uid_rule mobile " + app.uid + " allow");
+            commands.add("cmd appops set " + app.packageName + " CHANGE_NETWORK_STATE allow");
+            Toast.makeText(requireContext(), "Mobile data allowed for " + app.name, Toast.LENGTH_SHORT).show();
         }
         Shell.SU.run(commands);
     }
 
-    private void setVpnRestriction(String packageName, boolean restricted) {
+    private void setVpnRestriction(AppInfo app, boolean restricted) {
         List<String> commands = new ArrayList<>();
         if (restricted) {
-            commands.add("ip rule add uidrange $(pm list packages -U " + packageName + " | cut -d: -f3) lookup main");
+            commands.add("ip rule add uidrange " + app.uid + "-" + app.uid + " lookup main");
+            commands.add("cmd appops set " + app.packageName + " ACTIVITY_RECOGNITION deny");
+            Toast.makeText(requireContext(), "VPN restricted for " + app.name, Toast.LENGTH_SHORT).show();
         } else {
-            commands.add("ip rule del uidrange $(pm list packages -U " + packageName + " | cut -d: -f3) lookup main");
+            commands.add("ip rule del uidrange " + app.uid + "-" + app.uid + " lookup main");
+            commands.add("cmd appops set " + app.packageName + " ACTIVITY_RECOGNITION allow");
+            Toast.makeText(requireContext(), "VPN allowed for " + app.name, Toast.LENGTH_SHORT).show();
         }
         Shell.SU.run(commands);
     }
 
-    private void setBackgroundRestriction(String packageName, boolean restricted) {
+    private void setBackgroundRestriction(AppInfo app, boolean restricted) {
         List<String> commands = new ArrayList<>();
         if (restricted) {
-            commands.add("cmd appops set " + packageName + " RUN_IN_BACKGROUND ignore");
+            commands.add("cmd appops set " + app.packageName + " RUN_IN_BACKGROUND ignore");
+            commands.add("cmd appops set " + app.packageName + " BACKGROUND_START deny");
+            commands.add("cmd appops set " + app.packageName + " START_FOREGROUND deny");
+            Toast.makeText(requireContext(), "Background data blocked for " + app.name, Toast.LENGTH_SHORT).show();
         } else {
-            commands.add("cmd appops set " + packageName + " RUN_IN_BACKGROUND allow");
+            commands.add("cmd appops set " + app.packageName + " RUN_IN_BACKGROUND allow");
+            commands.add("cmd appops set " + app.packageName + " BACKGROUND_START allow");
+            commands.add("cmd appops set " + app.packageName + " START_FOREGROUND allow");
+            Toast.makeText(requireContext(), "Background data allowed for " + app.name, Toast.LENGTH_SHORT).show();
         }
         Shell.SU.run(commands);
     }
@@ -188,23 +184,23 @@ public class NetworkFragment extends Fragment {
             holder.backgroundSwitch.setChecked(!app.backgroundRestricted);
 
             holder.wifiSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                setWifiRestriction(app.packageName, !isChecked);
                 app.wifiRestricted = !isChecked;
+                setWifiRestriction(app, !isChecked);
             });
 
             holder.dataSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                setDataRestriction(app.packageName, !isChecked);
                 app.dataRestricted = !isChecked;
+                setDataRestriction(app, !isChecked);
             });
 
             holder.vpnSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                setVpnRestriction(app.packageName, !isChecked);
                 app.vpnRestricted = !isChecked;
+                setVpnRestriction(app, !isChecked);
             });
 
             holder.backgroundSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                setBackgroundRestriction(app.packageName, !isChecked);
                 app.backgroundRestricted = !isChecked;
+                setBackgroundRestriction(app, !isChecked);
             });
 
             holder.itemView.setOnLongClickListener(v -> {
@@ -238,11 +234,12 @@ public class NetworkFragment extends Fragment {
     private void showAppDetails(AppInfo app) {
         new AlertDialog.Builder(requireContext(), R.style.SpectrumDialogTheme)
             .setTitle(app.name)
-            .setMessage("Package: " + app.packageName + "\n\n" +
-                       "WiFi: " + (app.wifiRestricted ? "Blocked" : "Allowed") + "\n" +
-                       "Mobile Data: " + (app.dataRestricted ? "Blocked" : "Allowed") + "\n" +
-                       "VPN: " + (app.vpnRestricted ? "Blocked" : "Allowed") + "\n" +
-                       "Background Data: " + (app.backgroundRestricted ? "Blocked" : "Allowed"))
+            .setMessage("Package: " + app.packageName + "\n" +
+                       "UID: " + app.uid + "\n\n" +
+                       "WiFi: " + (app.wifiRestricted ? "❌ Blocked" : "✅ Allowed") + "\n" +
+                       "Mobile Data: " + (app.dataRestricted ? "❌ Blocked" : "✅ Allowed") + "\n" +
+                       "VPN: " + (app.vpnRestricted ? "❌ Blocked" : "✅ Allowed") + "\n" +
+                       "Background Data: " + (app.backgroundRestricted ? "❌ Blocked" : "✅ Allowed"))
             .setPositiveButton("OK", null)
             .show();
     }
@@ -250,10 +247,11 @@ public class NetworkFragment extends Fragment {
     private static class AppInfo {
         String name;
         String packageName;
+        int uid;
         android.graphics.drawable.Drawable icon;
         boolean wifiRestricted;
         boolean dataRestricted;
         boolean vpnRestricted;
         boolean backgroundRestricted;
     }
-    }
+}
