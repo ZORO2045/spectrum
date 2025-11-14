@@ -11,7 +11,6 @@ import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -29,7 +28,9 @@ import com.google.android.material.chip.ChipGroup;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import eu.chainfire.libsuperuser.Shell;
 
@@ -80,17 +81,11 @@ public class NetworkFragment extends Fragment {
         appsRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new NetworkAdapter(filteredList);
         appsRecyclerView.setAdapter(adapter);
+        
+        progressBar.setVisibility(View.GONE);
     }
 
     private void setupSearchView() {
-        searchEditText.setOnFocusChangeListener((v, hasFocus) -> {
-            if (hasFocus) {
-                searchEditText.setHint("");
-            } else {
-                searchEditText.setHint("Search apps...");
-            }
-        });
-
         searchEditText.addTextChangedListener(new android.text.TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -107,54 +102,45 @@ public class NetworkFragment extends Fragment {
     }
 
     private void setupFilterChips() {
-        chipAll.setChecked(true);
+        setActiveChip(chipAll);
         
         chipAll.setOnClickListener(v -> {
-            if (!chipAll.isChecked()) {
-                setActiveChip(chipAll);
-                currentFilter = "ALL";
-                filterApps();
-            }
+            setActiveChip(chipAll);
+            currentFilter = "ALL";
+            filterApps();
         });
 
         chipUser.setOnClickListener(v -> {
-            if (!chipUser.isChecked()) {
-                setActiveChip(chipUser);
-                currentFilter = "USER";
-                filterApps();
-            }
+            setActiveChip(chipUser);
+            currentFilter = "USER";
+            filterApps();
         });
 
         chipSystem.setOnClickListener(v -> {
-            if (!chipSystem.isChecked()) {
-                setActiveChip(chipSystem);
-                currentFilter = "SYSTEM";
-                filterApps();
-            }
+            setActiveChip(chipSystem);
+            currentFilter = "SYSTEM";
+            filterApps();
         });
 
         chipBlocked.setOnClickListener(v -> {
-            if (!chipBlocked.isChecked()) {
-                setActiveChip(chipBlocked);
-                currentFilter = "BLOCKED";
-                filterApps();
-            }
+            setActiveChip(chipBlocked);
+            currentFilter = "BLOCKED";
+            filterApps();
         });
 
         chipAllowed.setOnClickListener(v -> {
-            if (!chipAllowed.isChecked()) {
-                setActiveChip(chipAllowed);
-                currentFilter = "ALLOWED";
-                filterApps();
-            }
+            setActiveChip(chipAllowed);
+            currentFilter = "ALLOWED";
+            filterApps();
         });
     }
 
     private void setActiveChip(Chip activeChip) {
         Chip[] chips = {chipAll, chipUser, chipSystem, chipBlocked, chipAllowed};
         for (Chip chip : chips) {
-            chip.setChecked(chip == activeChip);
-            if (chip == activeChip) {
+            boolean isActive = chip == activeChip;
+            chip.setChecked(isActive);
+            if (isActive) {
                 chip.setChipBackgroundColorResource(R.color.colorAccent);
                 chip.setTextColor(getResources().getColor(R.color.colorPrimaryDark));
             } else {
@@ -167,7 +153,14 @@ public class NetworkFragment extends Fragment {
     private void filterApps() {
         filteredList.clear();
         
+        Set<String> uniquePackages = new HashSet<>();
+        
         for (AppInfo app : appList) {
+            if (uniquePackages.contains(app.packageName)) {
+                continue;
+            }
+            uniquePackages.add(app.packageName);
+            
             boolean matchesSearch = currentQuery.isEmpty() || 
                 app.name.toLowerCase().contains(currentQuery) ||
                 app.packageName.toLowerCase().contains(currentQuery);
@@ -185,6 +178,8 @@ public class NetworkFragment extends Fragment {
                 filteredList.add(app);
             }
         }
+        
+        Collections.sort(filteredList, (o1, o2) -> o1.name.compareToIgnoreCase(o2.name));
         
         updateEmptyState();
         adapter.notifyDataSetChanged();
@@ -207,15 +202,18 @@ public class NetworkFragment extends Fragment {
     }
 
     private void loadAllApps() {
-        progressBar.setVisibility(View.VISIBLE);
-        emptyText.setVisibility(View.GONE);
-
         new Thread(() -> {
-            appList.clear();
+            List<AppInfo> tempList = new ArrayList<>();
+            Set<String> packageSet = new HashSet<>();
             PackageManager pm = requireContext().getPackageManager();
             List<ApplicationInfo> packages = pm.getInstalledApplications(PackageManager.GET_META_DATA);
 
             for (ApplicationInfo packageInfo : packages) {
+                if (packageSet.contains(packageInfo.packageName)) {
+                    continue;
+                }
+                packageSet.add(packageInfo.packageName);
+                
                 AppInfo appInfo = new AppInfo();
                 appInfo.packageName = packageInfo.packageName;
                 appInfo.name = packageInfo.loadLabel(pm).toString();
@@ -225,14 +223,15 @@ public class NetworkFragment extends Fragment {
                 
                 appInfo.internetBlocked = isInternetBlocked(appInfo.uid);
 
-                appList.add(appInfo);
+                tempList.add(appInfo);
             }
 
-            Collections.sort(appList, (o1, o2) -> o1.name.compareToIgnoreCase(o2.name));
+            Collections.sort(tempList, (o1, o2) -> o1.name.compareToIgnoreCase(o2.name));
 
             new Handler(Looper.getMainLooper()).post(() -> {
+                appList.clear();
+                appList.addAll(tempList);
                 filterApps();
-                progressBar.setVisibility(View.GONE);
             });
         }).start();
     }
@@ -266,9 +265,9 @@ public class NetworkFragment extends Fragment {
         Shell.SU.run(commands);
         app.internetBlocked = block;
         
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+        new Handler(Looper.getMainLooper()).post(() -> {
             filterApps();
-        }, 100);
+        });
     }
 
     private class NetworkAdapter extends RecyclerView.Adapter<NetworkAdapter.ViewHolder> {
@@ -316,9 +315,7 @@ public class NetworkFragment extends Fragment {
             holder.blockSwitch.setOnCheckedChangeListener(null);
             holder.blockSwitch.setChecked(!app.internetBlocked);
             holder.blockSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                    blockInternetCompletely(app, !isChecked);
-                }, 50);
+                blockInternetCompletely(app, !isChecked);
             });
 
             holder.itemView.setOnClickListener(v -> {
