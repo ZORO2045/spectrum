@@ -5,6 +5,8 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,14 +15,17 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Switch;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.SearchView;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,19 +38,30 @@ public class NetworkFragment extends Fragment {
     private RecyclerView appsRecyclerView;
     private ProgressBar progressBar;
     private TextView emptyText;
+    private SearchView searchView;
+    private ChipGroup filterChipGroup;
+    private Chip chipAll, chipUser, chipSystem, chipBlocked, chipAllowed;
+    
     private List<AppInfo> appList = new ArrayList<>();
+    private List<AppInfo> filteredList = new ArrayList<>();
     private NetworkAdapter adapter;
+    
+    private String currentFilter = "ALL";
+    private String currentQuery = "";
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_network, container, false);
+        View view = inflater.inflate(R.layout.fragment_network, container, false);
+        return view;
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         initViews(view);
+        setupSearchView();
+        setupFilterChips();
         loadAllApps();
     }
 
@@ -53,10 +69,93 @@ public class NetworkFragment extends Fragment {
         appsRecyclerView = view.findViewById(R.id.appsRecyclerView);
         progressBar = view.findViewById(R.id.progressBar);
         emptyText = view.findViewById(R.id.emptyText);
+        searchView = view.findViewById(R.id.searchView);
+        filterChipGroup = view.findViewById(R.id.filterChipGroup);
+        chipAll = view.findViewById(R.id.chipAll);
+        chipUser = view.findViewById(R.id.chipUser);
+        chipSystem = view.findViewById(R.id.chipSystem);
+        chipBlocked = view.findViewById(R.id.chipBlocked);
+        chipAllowed = view.findViewById(R.id.chipAllowed);
 
         appsRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        adapter = new NetworkAdapter(appList);
+        adapter = new NetworkAdapter(filteredList);
         appsRecyclerView.setAdapter(adapter);
+    }
+
+    private void setupSearchView() {
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                currentQuery = newText.toLowerCase();
+                filterApps();
+                return true;
+            }
+        });
+    }
+
+    private void setupFilterChips() {
+        chipAll.setOnCheckedChangeListener((button, isChecked) -> {
+            if (isChecked) { currentFilter = "ALL"; filterApps(); }
+        });
+        chipUser.setOnCheckedChangeListener((button, isChecked) -> {
+            if (isChecked) { currentFilter = "USER"; filterApps(); }
+        });
+        chipSystem.setOnCheckedChangeListener((button, isChecked) -> {
+            if (isChecked) { currentFilter = "SYSTEM"; filterApps(); }
+        });
+        chipBlocked.setOnCheckedChangeListener((button, isChecked) -> {
+            if (isChecked) { currentFilter = "BLOCKED"; filterApps(); }
+        });
+        chipAllowed.setOnCheckedChangeListener((button, isChecked) -> {
+            if (isChecked) { currentFilter = "ALLOWED"; filterApps(); }
+        });
+    }
+
+    private void filterApps() {
+        filteredList.clear();
+        
+        for (AppInfo app : appList) {
+            boolean matchesSearch = currentQuery.isEmpty() || 
+                app.name.toLowerCase().contains(currentQuery) ||
+                app.packageName.toLowerCase().contains(currentQuery);
+            
+            boolean matchesFilter = false;
+            switch (currentFilter) {
+                case "ALL": matchesFilter = true; break;
+                case "USER": matchesFilter = !app.isSystemApp; break;
+                case "SYSTEM": matchesFilter = app.isSystemApp; break;
+                case "BLOCKED": matchesFilter = app.internetBlocked; break;
+                case "ALLOWED": matchesFilter = !app.internetBlocked; break;
+            }
+            
+            if (matchesSearch && matchesFilter) {
+                filteredList.add(app);
+            }
+        }
+        
+        updateEmptyState();
+        adapter.notifyDataSetChanged();
+    }
+
+    private void updateEmptyState() {
+        if (filteredList.isEmpty()) {
+            emptyText.setVisibility(View.VISIBLE);
+            String message = "No apps found";
+            if (!currentQuery.isEmpty()) {
+                message += " for '" + currentQuery + "'";
+            }
+            if (!currentFilter.equals("ALL")) {
+                message += " in " + currentFilter.toLowerCase() + " apps";
+            }
+            emptyText.setText(message);
+        } else {
+            emptyText.setVisibility(View.GONE);
+        }
     }
 
     private void loadAllApps() {
@@ -81,19 +180,11 @@ public class NetworkFragment extends Fragment {
                 appList.add(appInfo);
             }
 
-            Collections.sort(appList, (o1, o2) -> {
-                if (o1.isSystemApp != o2.isSystemApp) {
-                    return o1.isSystemApp ? 1 : -1;
-                }
-                return o1.name.compareToIgnoreCase(o2.name);
-            });
+            Collections.sort(appList, (o1, o2) -> o1.name.compareToIgnoreCase(o2.name));
 
             new Handler(Looper.getMainLooper()).post(() -> {
-                adapter.notifyDataSetChanged();
+                filterApps();
                 progressBar.setVisibility(View.GONE);
-                if (appList.isEmpty()) {
-                    emptyText.setVisibility(View.VISIBLE);
-                }
             });
         }).start();
     }
@@ -114,8 +205,6 @@ public class NetworkFragment extends Fragment {
             commands.add("ip rule add from all uidrange " + app.uid + "-" + app.uid + " lookup main");
             commands.add("cmd appops set " + app.packageName + " RUN_IN_BACKGROUND ignore");
             commands.add("cmd appops set " + app.packageName + " BACKGROUND_START deny");
-            
-            Toast.makeText(requireContext(), "Internet blocked for " + app.name, Toast.LENGTH_SHORT).show();
         } else {
             commands.add("iptables -D OUTPUT -m owner --uid-owner " + app.uid + " -j DROP");
             commands.add("iptables -D INPUT -m owner --uid-owner " + app.uid + " -j DROP");
@@ -124,18 +213,11 @@ public class NetworkFragment extends Fragment {
             commands.add("ip rule del from all uidrange " + app.uid + "-" + app.uid + " lookup main");
             commands.add("cmd appops set " + app.packageName + " RUN_IN_BACKGROUND allow");
             commands.add("cmd appops set " + app.packageName + " BACKGROUND_START allow");
-            
-            Toast.makeText(requireContext(), "Internet allowed for " + app.name, Toast.LENGTH_SHORT).show();
         }
         
         Shell.SU.run(commands);
-    }
-
-    private void createFirewallChains() {
-        List<String> commands = new ArrayList<>();
-        commands.add("iptables -N SPECTRUM_FW 2>/dev/null || iptables -F SPECTRUM_FW");
-        commands.add("ip6tables -N SPECTRUM_FW 2>/dev/null || ip6tables -F SPECTRUM_FW");
-        Shell.SU.run(commands);
+        app.internetBlocked = block;
+        filterApps();
     }
 
     private class NetworkAdapter extends RecyclerView.Adapter<NetworkAdapter.ViewHolder> {
@@ -158,25 +240,38 @@ public class NetworkFragment extends Fragment {
             AppInfo app = apps.get(position);
             holder.appName.setText(app.name);
             holder.appIcon.setImageDrawable(app.icon);
+            holder.packageName.setText(app.packageName);
             
             if (app.isSystemApp) {
-                holder.appName.setTextColor(0xFFB399FF);
-                holder.systemIndicator.setVisibility(View.VISIBLE);
+                holder.appType.setText("SYSTEM");
+                holder.appType.setTextColor(0xFFB399FF);
+                holder.appType.setBackgroundResource(R.drawable.bg_system_chip);
             } else {
-                holder.appName.setTextColor(0xFFFFFFFF);
-                holder.systemIndicator.setVisibility(View.GONE);
+                holder.appType.setText("USER");
+                holder.appType.setTextColor(0xFF4CAF50);
+                holder.appType.setBackgroundResource(R.drawable.bg_user_chip);
             }
 
-            holder.blockSwitch.setChecked(!app.internetBlocked);
+            if (app.internetBlocked) {
+                holder.status.setText("BLOCKED");
+                holder.status.setTextColor(0xFFFF5722);
+                holder.status.setBackgroundResource(R.drawable.bg_blocked_chip);
+                holder.blockSwitch.setChecked(false);
+            } else {
+                holder.status.setText("ALLOWED");
+                holder.status.setTextColor(0xFF4CAF50);
+                holder.status.setBackgroundResource(R.drawable.bg_allowed_chip);
+                holder.blockSwitch.setChecked(true);
+            }
 
+            holder.blockSwitch.setOnCheckedChangeListener(null);
+            holder.blockSwitch.setChecked(!app.internetBlocked);
             holder.blockSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                app.internetBlocked = !isChecked;
                 blockInternetCompletely(app, !isChecked);
             });
 
-            holder.itemView.setOnLongClickListener(v -> {
+            holder.itemView.setOnClickListener(v -> {
                 showAppDetails(app);
-                return true;
             });
         }
 
@@ -187,21 +282,23 @@ public class NetworkFragment extends Fragment {
 
         public class ViewHolder extends RecyclerView.ViewHolder {
             ImageView appIcon;
-            TextView appName, systemIndicator;
+            TextView appName, packageName, appType, status;
             Switch blockSwitch;
 
             public ViewHolder(@NonNull View itemView) {
                 super(itemView);
                 appIcon = itemView.findViewById(R.id.appIcon);
                 appName = itemView.findViewById(R.id.appName);
-                systemIndicator = itemView.findViewById(R.id.systemIndicator);
+                packageName = itemView.findViewById(R.id.packageName);
+                appType = itemView.findViewById(R.id.appType);
+                status = itemView.findViewById(R.id.status);
                 blockSwitch = itemView.findViewById(R.id.blockSwitch);
             }
         }
     }
 
     private void showAppDetails(AppInfo app) {
-        String status = app.internetBlocked ? "COMPLETELY BLOCKED" : "ALLOWED";
+        String status = app.internetBlocked ? "BLOCKED ❌" : "ALLOWED ✅";
         String type = app.isSystemApp ? "System App" : "User App";
         
         new AlertDialog.Builder(requireContext(), R.style.SpectrumDialogTheme)
@@ -209,8 +306,9 @@ public class NetworkFragment extends Fragment {
             .setMessage(
                 "Package: " + app.packageName + "\n" +
                 "UID: " + app.uid + "\n" +
-                "Type: " + type + "\n\n" +
-                "Internet Access: " + status
+                "Type: " + type + "\n" +
+                "Status: " + status + "\n\n" +
+                "Internet access is " + (app.internetBlocked ? "completely blocked" : "fully allowed") + " for this app."
             )
             .setPositiveButton("OK", null)
             .setNeutralButton("Refresh", (dialog, which) -> loadAllApps())
@@ -220,7 +318,6 @@ public class NetworkFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        createFirewallChains();
         loadAllApps();
     }
 
@@ -232,4 +329,4 @@ public class NetworkFragment extends Fragment {
         android.graphics.drawable.Drawable icon;
         boolean internetBlocked;
     }
-}
+    }
