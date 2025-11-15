@@ -359,11 +359,9 @@ public class NetworkFragment extends Fragment {
                 "Internet access is " + (app.internetBlocked ? "completely blocked" : "fully allowed") + " for this app."
             )
             .setPositiveButton("OK", null)
-            .setNeutralButton("Refresh", (dialogInterface, which) -> loadAllApps())
             .show();
 
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(R.color.colorAccent));
-        dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setTextColor(getResources().getColor(R.color.colorAccent));
     }
 
     @Override
@@ -380,4 +378,4 @@ public class NetworkFragment extends Fragment {
         android.graphics.drawable.Drawable icon;
         boolean internetBlocked;
     }
-}
+    }
