@@ -50,6 +50,7 @@ public class NetworkFragment extends Fragment {
     
     private String currentFilter = "ALL";
     private String currentQuery = "";
+    private boolean isInitialLoad = true;
 
     @Nullable
     @Override
@@ -80,8 +81,6 @@ public class NetworkFragment extends Fragment {
         appsRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new NetworkAdapter(filteredList);
         appsRecyclerView.setAdapter(adapter);
-        
-        progressBar.setVisibility(View.GONE);
     }
 
     private void setupSearchView() {
@@ -138,6 +137,10 @@ public class NetworkFragment extends Fragment {
     }
 
     private void filterApps() {
+        if (appList.isEmpty() && isInitialLoad) {
+            return;
+        }
+        
         filteredList.clear();
         
         Set<String> uniquePackages = new HashSet<>();
@@ -187,6 +190,9 @@ public class NetworkFragment extends Fragment {
     }
 
     private void loadAllApps() {
+        progressBar.setVisibility(View.VISIBLE);
+        emptyText.setVisibility(View.GONE);
+
         new Thread(() -> {
             List<AppInfo> tempList = new ArrayList<>();
             Set<String> packageSet = new HashSet<>();
@@ -219,18 +225,20 @@ public class NetworkFragment extends Fragment {
             new Handler(Looper.getMainLooper()).post(() -> {
                 appList.clear();
                 appList.addAll(tempList);
+                isInitialLoad = false;
                 filterApps();
+                progressBar.setVisibility(View.GONE);
             });
         }).start();
     }
 
     private boolean isWifiBlocked(int uid) {
-        List<String> result = Shell.SU.run("iptables -L OUTPUT -n | grep " + uid + " | grep wifi");
+        List<String> result = Shell.SU.run("iptables -L OUTPUT -n | grep " + uid);
         return result != null && !result.isEmpty();
     }
 
     private boolean isDataBlocked(int uid) {
-        List<String> result = Shell.SU.run("iptables -L OUTPUT -n | grep " + uid + " | grep mobile");
+        List<String> result = Shell.SU.run("ip6tables -L OUTPUT -n | grep " + uid);
         return result != null && !result.isEmpty();
     }
 
@@ -249,11 +257,9 @@ public class NetworkFragment extends Fragment {
         if (block) {
             commands.add("iptables -I OUTPUT 1 -m owner --uid-owner " + app.uid + " -j DROP");
             commands.add("iptables -I INPUT 1 -m owner --uid-owner " + app.uid + " -j DROP");
-            Toast.makeText(requireContext(), "WiFi blocked for " + app.name, Toast.LENGTH_SHORT).show();
         } else {
             commands.add("iptables -D OUTPUT -m owner --uid-owner " + app.uid + " -j DROP");
             commands.add("iptables -D INPUT -m owner --uid-owner " + app.uid + " -j DROP");
-            Toast.makeText(requireContext(), "WiFi allowed for " + app.name, Toast.LENGTH_SHORT).show();
         }
         Shell.SU.run(commands);
         app.wifiBlocked = block;
@@ -264,11 +270,9 @@ public class NetworkFragment extends Fragment {
         if (block) {
             commands.add("ip6tables -I OUTPUT 1 -m owner --uid-owner " + app.uid + " -j DROP");
             commands.add("ip6tables -I INPUT 1 -m owner --uid-owner " + app.uid + " -j DROP");
-            Toast.makeText(requireContext(), "Mobile data blocked for " + app.name, Toast.LENGTH_SHORT).show();
         } else {
             commands.add("ip6tables -D OUTPUT -m owner --uid-owner " + app.uid + " -j DROP");
             commands.add("ip6tables -D INPUT -m owner --uid-owner " + app.uid + " -j DROP");
-            Toast.makeText(requireContext(), "Mobile data allowed for " + app.name, Toast.LENGTH_SHORT).show();
         }
         Shell.SU.run(commands);
         app.dataBlocked = block;
@@ -279,11 +283,9 @@ public class NetworkFragment extends Fragment {
         if (block) {
             commands.add("cmd appops set " + app.packageName + " RUN_IN_BACKGROUND ignore");
             commands.add("cmd appops set " + app.packageName + " BACKGROUND_START deny");
-            Toast.makeText(requireContext(), "Background data blocked for " + app.name, Toast.LENGTH_SHORT).show();
         } else {
             commands.add("cmd appops set " + app.packageName + " RUN_IN_BACKGROUND allow");
             commands.add("cmd appops set " + app.packageName + " BACKGROUND_START allow");
-            Toast.makeText(requireContext(), "Background data allowed for " + app.name, Toast.LENGTH_SHORT).show();
         }
         Shell.SU.run(commands);
         app.backgroundBlocked = block;
@@ -293,51 +295,95 @@ public class NetworkFragment extends Fragment {
         List<String> commands = new ArrayList<>();
         if (block) {
             commands.add("ip rule add from all uidrange " + app.uid + "-" + app.uid + " lookup main");
-            Toast.makeText(requireContext(), "VPN blocked for " + app.name, Toast.LENGTH_SHORT).show();
         } else {
             commands.add("ip rule del from all uidrange " + app.uid + "-" + app.uid + " lookup main");
-            Toast.makeText(requireContext(), "VPN allowed for " + app.name, Toast.LENGTH_SHORT).show();
         }
         Shell.SU.run(commands);
         app.vpnBlocked = block;
     }
 
+    private void blockAllInternet(AppInfo app, boolean block) {
+        setWifiRestriction(app, block);
+        setDataRestriction(app, block);
+        setVpnRestriction(app, block);
+        setBackgroundRestriction(app, block);
+        
+        if (block) {
+            Toast.makeText(requireContext(), "All internet access blocked for " + app.name, Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(requireContext(), "All internet access allowed for " + app.name, Toast.LENGTH_SHORT).show();
+        }
+        
+        new Handler(Looper.getMainLooper()).post(() -> {
+            filterApps();
+        });
+    }
+
     private void showAdvancedOptions(AppInfo app) {
         View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_network_options, null);
         
+        ImageView appIcon = dialogView.findViewById(R.id.dialogAppIcon);
+        TextView appName = dialogView.findViewById(R.id.dialogAppName);
+        Switch mainSwitch = dialogView.findViewById(R.id.mainSwitch);
         Switch wifiSwitch = dialogView.findViewById(R.id.wifiSwitch);
         Switch dataSwitch = dialogView.findViewById(R.id.dataSwitch);
         Switch backgroundSwitch = dialogView.findViewById(R.id.backgroundSwitch);
         Switch vpnSwitch = dialogView.findViewById(R.id.vpnSwitch);
+        
+        appIcon.setImageDrawable(app.icon);
+        appName.setText(app.name);
+        
+        boolean allAllowed = !app.wifiBlocked && !app.dataBlocked && !app.backgroundBlocked && !app.vpnBlocked;
+        mainSwitch.setChecked(allAllowed);
         
         wifiSwitch.setChecked(!app.wifiBlocked);
         dataSwitch.setChecked(!app.dataBlocked);
         backgroundSwitch.setChecked(!app.backgroundBlocked);
         vpnSwitch.setChecked(!app.vpnBlocked);
         
+        mainSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            blockAllInternet(app, !isChecked);
+            wifiSwitch.setChecked(isChecked);
+            dataSwitch.setChecked(isChecked);
+            backgroundSwitch.setChecked(isChecked);
+            vpnSwitch.setChecked(isChecked);
+        });
+        
         wifiSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             setWifiRestriction(app, !isChecked);
+            updateMainSwitch(mainSwitch, app);
         });
         
         dataSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             setDataRestriction(app, !isChecked);
+            updateMainSwitch(mainSwitch, app);
         });
         
         backgroundSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             setBackgroundRestriction(app, !isChecked);
+            updateMainSwitch(mainSwitch, app);
         });
         
         vpnSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             setVpnRestriction(app, !isChecked);
+            updateMainSwitch(mainSwitch, app);
         });
         
         AlertDialog dialog = new AlertDialog.Builder(requireContext(), R.style.SpectrumDialogTheme)
-            .setTitle(app.name)
             .setView(dialogView)
             .setPositiveButton("OK", null)
             .show();
 
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(R.color.colorAccent));
+    }
+
+    private void updateMainSwitch(Switch mainSwitch, AppInfo app) {
+        boolean allAllowed = !app.wifiBlocked && !app.dataBlocked && !app.backgroundBlocked && !app.vpnBlocked;
+        mainSwitch.setOnCheckedChangeListener(null);
+        mainSwitch.setChecked(allAllowed);
+        mainSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            blockAllInternet(app, !isChecked);
+        });
     }
 
     private class NetworkAdapter extends RecyclerView.Adapter<NetworkAdapter.ViewHolder> {
