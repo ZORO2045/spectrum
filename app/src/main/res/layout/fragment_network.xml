@@ -56,6 +56,20 @@
             android:text="System Apps"
             style="@style/FilterChip" />
 
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipBlocked"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Blocked Apps"
+            style="@style/FilterChip" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipAllowed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Allowed Apps"
+            style="@style/FilterChip" />
+
     </com.google.android.material.chip.ChipGroup>
 
     <TextView
