@@ -32,6 +32,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import eu.chainfire.libsuperuser.Shell;
 
@@ -42,7 +44,7 @@ public class NetworkFragment extends Fragment {
     private TextView emptyText;
     private EditText searchEditText;
     private ChipGroup filterChipGroup;
-    private Chip chipAll, chipUser, chipSystem;
+    private Chip chipAll, chipUser, chipSystem, chipBlocked, chipAllowed;
     
     private List<AppInfo> appList = new ArrayList<>();
     private List<AppInfo> filteredList = new ArrayList<>();
@@ -51,6 +53,7 @@ public class NetworkFragment extends Fragment {
     private String currentFilter = "ALL";
     private String currentQuery = "";
     private boolean isInitialLoad = true;
+    private ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     @Nullable
     @Override
@@ -77,10 +80,14 @@ public class NetworkFragment extends Fragment {
         chipAll = view.findViewById(R.id.chipAll);
         chipUser = view.findViewById(R.id.chipUser);
         chipSystem = view.findViewById(R.id.chipSystem);
+        chipBlocked = view.findViewById(R.id.chipBlocked);
+        chipAllowed = view.findViewById(R.id.chipAllowed);
 
         appsRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new NetworkAdapter(filteredList);
         appsRecyclerView.setAdapter(adapter);
+        appsRecyclerView.setHasFixedSize(true);
+        appsRecyclerView.setItemViewCacheSize(50);
     }
 
     private void setupSearchView() {
@@ -119,16 +126,28 @@ public class NetworkFragment extends Fragment {
             currentFilter = "SYSTEM";
             filterApps();
         });
+
+        chipBlocked.setOnClickListener(v -> {
+            setActiveChip(chipBlocked);
+            currentFilter = "BLOCKED";
+            filterApps();
+        });
+
+        chipAllowed.setOnClickListener(v -> {
+            setActiveChip(chipAllowed);
+            currentFilter = "ALLOWED";
+            filterApps();
+        });
     }
 
     private void setActiveChip(Chip activeChip) {
-        Chip[] chips = {chipAll, chipUser, chipSystem};
+        Chip[] chips = {chipAll, chipUser, chipSystem, chipBlocked, chipAllowed};
         for (Chip chip : chips) {
             boolean isActive = chip == activeChip;
             chip.setChecked(isActive);
             if (isActive) {
-                chip.setChipBackgroundColorResource(R.color.colorAccent);
-                chip.setTextColor(getResources().getColor(R.color.colorPrimaryDark));
+                chip.setChipBackgroundColorResource(R.color.chip_background_checked);
+                chip.setTextColor(getResources().getColor(R.color.chip_text_checked));
             } else {
                 chip.setChipBackgroundColorResource(R.color.chip_background_color);
                 chip.setTextColor(getResources().getColor(R.color.chip_text_color));
@@ -160,6 +179,8 @@ public class NetworkFragment extends Fragment {
                 case "ALL": matchesFilter = true; break;
                 case "USER": matchesFilter = !app.isSystemApp; break;
                 case "SYSTEM": matchesFilter = app.isSystemApp; break;
+                case "BLOCKED": matchesFilter = app.wifiBlocked || app.dataBlocked || app.backgroundBlocked || app.vpnBlocked; break;
+                case "ALLOWED": matchesFilter = !app.wifiBlocked && !app.dataBlocked && !app.backgroundBlocked && !app.vpnBlocked; break;
             }
             
             if (matchesSearch && matchesFilter) {
@@ -193,7 +214,7 @@ public class NetworkFragment extends Fragment {
         progressBar.setVisibility(View.VISIBLE);
         emptyText.setVisibility(View.GONE);
 
-        new Thread(() -> {
+        executorService.execute(() -> {
             List<AppInfo> tempList = new ArrayList<>();
             Set<String> packageSet = new HashSet<>();
             PackageManager pm = requireContext().getPackageManager();
@@ -211,7 +232,6 @@ public class NetworkFragment extends Fragment {
                 appInfo.icon = packageInfo.loadIcon(pm);
                 appInfo.uid = packageInfo.uid;
                 appInfo.isSystemApp = (packageInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
-                
                 appInfo.wifiBlocked = isWifiBlocked(appInfo.uid);
                 appInfo.dataBlocked = isDataBlocked(appInfo.uid);
                 appInfo.backgroundBlocked = isBackgroundBlocked(appInfo.packageName);
@@ -229,7 +249,7 @@ public class NetworkFragment extends Fragment {
                 filterApps();
                 progressBar.setVisibility(View.GONE);
             });
-        }).start();
+        });
     }
 
     private boolean isWifiBlocked(int uid) {
@@ -332,9 +352,8 @@ public class NetworkFragment extends Fragment {
         
         appIcon.setImageDrawable(app.icon);
         appName.setText(app.name);
-        
-        boolean allAllowed = !app.wifiBlocked && !app.dataBlocked && !app.backgroundBlocked && !app.vpnBlocked;
-        mainSwitch.setChecked(allAllowed);
+     
+        updateMainSwitchState(mainSwitch, app);
         
         wifiSwitch.setChecked(!app.wifiBlocked);
         dataSwitch.setChecked(!app.dataBlocked);
@@ -351,33 +370,33 @@ public class NetworkFragment extends Fragment {
         
         wifiSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             setWifiRestriction(app, !isChecked);
-            updateMainSwitch(mainSwitch, app);
+            updateMainSwitchState(mainSwitch, app);
         });
         
         dataSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             setDataRestriction(app, !isChecked);
-            updateMainSwitch(mainSwitch, app);
+            updateMainSwitchState(mainSwitch, app);
         });
         
         backgroundSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             setBackgroundRestriction(app, !isChecked);
-            updateMainSwitch(mainSwitch, app);
+            updateMainSwitchState(mainSwitch, app);
         });
         
         vpnSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             setVpnRestriction(app, !isChecked);
-            updateMainSwitch(mainSwitch, app);
+            updateMainSwitchState(mainSwitch, app);
         });
         
         AlertDialog dialog = new AlertDialog.Builder(requireContext(), R.style.SpectrumDialogTheme)
             .setView(dialogView)
-            .setPositiveButton("OK", null)
+            .setPositiveButton("Save Changes", null)
             .show();
 
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(R.color.colorAccent));
     }
 
-    private void updateMainSwitch(Switch mainSwitch, AppInfo app) {
+    private void updateMainSwitchState(Switch mainSwitch, AppInfo app) {
         boolean allAllowed = !app.wifiBlocked && !app.dataBlocked && !app.backgroundBlocked && !app.vpnBlocked;
         mainSwitch.setOnCheckedChangeListener(null);
         mainSwitch.setChecked(allAllowed);
@@ -410,11 +429,9 @@ public class NetworkFragment extends Fragment {
             
             if (app.isSystemApp) {
                 holder.appType.setText("SYSTEM");
-                holder.appType.setTextColor(0xFFB399FF);
                 holder.appType.setBackgroundResource(R.drawable.bg_system_chip);
             } else {
                 holder.appType.setText("USER");
-                holder.appType.setTextColor(0xFF4CAF50);
                 holder.appType.setBackgroundResource(R.drawable.bg_user_chip);
             }
 
@@ -426,11 +443,9 @@ public class NetworkFragment extends Fragment {
             
             if (blockedCount > 0) {
                 holder.status.setText(blockedCount + " BLOCKED");
-                holder.status.setTextColor(0xFFFF5722);
                 holder.status.setBackgroundResource(R.drawable.bg_blocked_chip);
             } else {
                 holder.status.setText("ALL ALLOWED");
-                holder.status.setTextColor(0xFF4CAF50);
                 holder.status.setBackgroundResource(R.drawable.bg_allowed_chip);
             }
 
@@ -465,6 +480,14 @@ public class NetworkFragment extends Fragment {
         loadAllApps();
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (executorService != null && !executorService.isShutdown()) {
+            executorService.shutdown();
+        }
+    }
+
     private static class AppInfo {
         String name;
         String packageName;
@@ -476,4 +499,4 @@ public class NetworkFragment extends Fragment {
         boolean backgroundBlocked;
         boolean vpnBlocked;
     }
-}
+    }
