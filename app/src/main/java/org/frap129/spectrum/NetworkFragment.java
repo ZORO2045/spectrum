@@ -47,8 +47,12 @@ public class NetworkFragment extends Fragment {
 
     private String currentFilter = "ALL";
     private String currentQuery = "";
-    private ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private ExecutorService executorService = Executors.newFixedThreadPool(2);
     private Handler mainHandler = new Handler(Looper.getMainLooper());
+    private boolean isDataLoaded = false;
+
+    private Handler toastHandler = new Handler();
+    private Runnable toastRunnable;
 
     @Nullable
     @Override
@@ -63,7 +67,10 @@ public class NetworkFragment extends Fragment {
         initViews(view);
         setupSearchView();
         setupFilterChips();
-        loadAllApps();
+
+        if (!isDataLoaded) {
+            loadAllApps();
+        }
     }
 
     private void initViews(View view) {
@@ -78,11 +85,13 @@ public class NetworkFragment extends Fragment {
         chipAllowed = view.findViewById(R.id.chipAllowed);
 
         appsRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        appsRecyclerView.setHasFixedSize(true);
+        appsRecyclerView.setItemViewCacheSize(20);
+        appsRecyclerView.setDrawingCacheEnabled(true);
+        appsRecyclerView.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);
+
         adapter = new NetworkAdapter(filteredList);
         appsRecyclerView.setAdapter(adapter);
-
-        appsRecyclerView.setHasFixedSize(true);
-        appsRecyclerView.setItemViewCacheSize(50);
     }
 
     private void setupSearchView() {
@@ -157,6 +166,7 @@ public class NetworkFragment extends Fragment {
         }
 
         filteredList.clear();
+
         Set<String> uniquePackages = new HashSet<>();
 
         for (AppInfo app : appList) {
@@ -215,7 +225,7 @@ public class NetworkFragment extends Fragment {
             List<AppInfo> tempList = new ArrayList<>();
             Set<String> packageSet = new HashSet<>();
             PackageManager pm = requireContext().getPackageManager();
-            List<ApplicationInfo> packages = pm.getInstalledApplications(PackageManager.GET_META_DATA);
+            List<ApplicationInfo> packages = pm.getInstalledApplications(PackageManager.MATCH_ALL);
 
             for (ApplicationInfo packageInfo : packages) {
                 if (packageSet.contains(packageInfo.packageName)) {
@@ -229,12 +239,29 @@ public class NetworkFragment extends Fragment {
                 appInfo.icon = packageInfo.loadIcon(pm);
                 appInfo.uid = packageInfo.uid;
                 appInfo.isSystemApp = (packageInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
-                appInfo.isBlocked = isAppBlocked(appInfo.uid, appInfo.packageName);
+                appInfo.isBlocked = false;
 
                 tempList.add(appInfo);
             }
 
             Collections.sort(tempList, (o1, o2) -> o1.name.compareToIgnoreCase(o2.name));
+
+            mainHandler.post(() -> {
+                appList.clear();
+                appList.addAll(tempList);
+                isDataLoaded = true;
+                filterApps();
+            });
+
+            checkBlockStatusInBackground(tempList);
+        });
+    }
+
+    private void checkBlockStatusInBackground(List<AppInfo> tempList) {
+        executorService.execute(() -> {
+            for (AppInfo app : tempList) {
+                app.isBlocked = isAppBlocked(app.uid, app.packageName);
+            }
 
             mainHandler.post(() -> {
                 appList.clear();
@@ -245,100 +272,132 @@ public class NetworkFragment extends Fragment {
     }
 
     private boolean isAppBlocked(int uid, String packageName) {
-        boolean wifiBlocked = isWifiBlocked(uid);
-        boolean dataBlocked = isDataBlocked(uid);
-        boolean backgroundBlocked = isBackgroundBlocked(packageName);
-        boolean vpnBlocked = isVpnBlocked(uid);
-        return wifiBlocked || dataBlocked || backgroundBlocked || vpnBlocked;
+        return isWifiBlocked(uid) || isDataBlocked(uid);
     }
 
     private void blockAllInternet(AppInfo app, boolean block) {
-        setWifiRestriction(app, block);
-        setDataRestriction(app, block);
-        setVpnRestriction(app, block);
-        setBackgroundRestriction(app, block);
+        executorService.execute(() -> {
+            setWifiRestriction(app, block);
+            setDataRestriction(app, block);
+            setVpnRestriction(app, block);
+            setBackgroundRestriction(app, block);
 
-        app.isBlocked = block;
+            app.isBlocked = block;
 
-        if (block) {
-            showToast("Internet completely blocked for " + app.name);
-        } else {
-            showToast("Internet allowed for " + app.name);
-        }
-
-        mainHandler.post(this::filterApps);
-    }
-
-    private void showToast(String message) {
-        mainHandler.post(() -> {
-            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+            mainHandler.post(() -> {
+                showSingleToast(block ? "Internet blocked for " + app.name : "Internet allowed for " + app.name);
+                filterApps();
+            });
         });
     }
 
+    private void showSingleToast(String message) {
+        if (toastRunnable != null) {
+            toastHandler.removeCallbacks(toastRunnable);
+        }
+
+        toastRunnable = () -> {
+            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+            toastRunnable = null;
+        };
+
+        toastHandler.post(toastRunnable);
+    }
+
     private boolean isWifiBlocked(int uid) {
-        List<String> result = Shell.SU.run("iptables -L OUTPUT -n | grep " + uid);
-        return result != null && !result.isEmpty();
+        try {
+            List<String> result = Shell.SU.run("iptables -L OUTPUT -n | grep " + uid);
+            return result != null && !result.isEmpty();
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private boolean isDataBlocked(int uid) {
-        List<String> result = Shell.SU.run("ip6tables -L OUTPUT -n | grep " + uid);
-        return result != null && !result.isEmpty();
+        try {
+            List<String> result = Shell.SU.run("ip6tables -L OUTPUT -n | grep " + uid);
+            return result != null && !result.isEmpty();
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private boolean isBackgroundBlocked(String packageName) {
-        List<String> result = Shell.SU.run("cmd appops get " + packageName + " RUN_IN_BACKGROUND");
-        return result != null && result.toString().contains("ignore");
+        try {
+            List<String> result = Shell.SU.run("cmd appops get " + packageName + " RUN_IN_BACKGROUND");
+            return result != null && result.toString().contains("ignore");
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private boolean isVpnBlocked(int uid) {
-        List<String> result = Shell.SU.run("ip rule show | grep " + uid);
-        return result != null && !result.isEmpty();
+        try {
+            List<String> result = Shell.SU.run("ip rule show | grep " + uid);
+            return result != null && !result.isEmpty();
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private void setWifiRestriction(AppInfo app, boolean block) {
-        List<String> commands = new ArrayList<>();
-        if (block) {
-            commands.add("iptables -I OUTPUT 1 -m owner --uid-owner " + app.uid + " -j DROP");
-            commands.add("iptables -I INPUT 1 -m owner --uid-owner " + app.uid + " -j DROP");
-        } else {
-            commands.add("iptables -D OUTPUT -m owner --uid-owner " + app.uid + " -j DROP");
-            commands.add("iptables -D INPUT -m owner --uid-owner " + app.uid + " -j DROP");
+        try {
+            List<String> commands = new ArrayList<>();
+            if (block) {
+                commands.add("iptables -I OUTPUT 1 -m owner --uid-owner " + app.uid + " -j DROP");
+                commands.add("iptables -I INPUT 1 -m owner --uid-owner " + app.uid + " -j DROP");
+            } else {
+                commands.add("iptables -D OUTPUT -m owner --uid-owner " + app.uid + " -j DROP");
+                commands.add("iptables -D INPUT -m owner --uid-owner " + app.uid + " -j DROP");
+            }
+            Shell.SU.run(commands);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        Shell.SU.run(commands);
     }
 
     private void setDataRestriction(AppInfo app, boolean block) {
-        List<String> commands = new ArrayList<>();
-        if (block) {
-            commands.add("ip6tables -I OUTPUT 1 -m owner --uid-owner " + app.uid + " -j DROP");
-            commands.add("ip6tables -I INPUT 1 -m owner --uid-owner " + app.uid + " -j DROP");
-        } else {
-            commands.add("ip6tables -D OUTPUT -m owner --uid-owner " + app.uid + " -j DROP");
-            commands.add("ip6tables -D INPUT -m owner --uid-owner " + app.uid + " -j DROP");
+        try {
+            List<String> commands = new ArrayList<>();
+            if (block) {
+                commands.add("ip6tables -I OUTPUT 1 -m owner --uid-owner " + app.uid + " -j DROP");
+                commands.add("ip6tables -I INPUT 1 -m owner --uid-owner " + app.uid + " -j DROP");
+            } else {
+                commands.add("ip6tables -D OUTPUT -m owner --uid-owner " + app.uid + " -j DROP");
+                commands.add("ip6tables -D INPUT -m owner --uid-owner " + app.uid + " -j DROP");
+            }
+            Shell.SU.run(commands);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        Shell.SU.run(commands);
     }
 
     private void setBackgroundRestriction(AppInfo app, boolean block) {
-        List<String> commands = new ArrayList<>();
-        if (block) {
-            commands.add("cmd appops set " + app.packageName + " RUN_IN_BACKGROUND ignore");
-            commands.add("cmd appops set " + app.packageName + " BACKGROUND_START deny");
-        } else {
-            commands.add("cmd appops set " + app.packageName + " RUN_IN_BACKGROUND allow");
-            commands.add("cmd appops set " + app.packageName + " BACKGROUND_START allow");
+        try {
+            List<String> commands = new ArrayList<>();
+            if (block) {
+                commands.add("cmd appops set " + app.packageName + " RUN_IN_BACKGROUND ignore");
+            } else {
+                commands.add("cmd appops set " + app.packageName + " RUN_IN_BACKGROUND allow");
+            }
+            Shell.SU.run(commands);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        Shell.SU.run(commands);
     }
 
     private void setVpnRestriction(AppInfo app, boolean block) {
-        List<String> commands = new ArrayList<>();
-        if (block) {
-            commands.add("ip rule add from all uidrange " + app.uid + "-" + app.uid + " lookup main");
-        } else {
-            commands.add("ip rule del from all uidrange " + app.uid + "-" + app.uid + " lookup main");
+        try {
+            List<String> commands = new ArrayList<>();
+            if (block) {
+                commands.add("ip rule add from all uidrange " + app.uid + "-" + app.uid + " lookup main");
+            } else {
+                commands.add("ip rule del from all uidrange " + app.uid + "-" + app.uid + " lookup main");
+            }
+            Shell.SU.run(commands);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        Shell.SU.run(commands);
     }
 
     private class NetworkAdapter extends RecyclerView.Adapter<NetworkAdapter.ViewHolder> {
@@ -360,33 +419,7 @@ public class NetworkFragment extends Fragment {
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             AppInfo app = apps.get(position);
-            holder.appName.setText(app.name);
-            holder.appIcon.setImageDrawable(app.icon);
-            holder.packageName.setText(app.packageName);
-
-            if (app.isSystemApp) {
-                holder.appType.setText("SYSTEM");
-                holder.appType.setBackgroundResource(R.drawable.bg_system_chip);
-            } else {
-                holder.appType.setText("USER");
-                holder.appType.setBackgroundResource(R.drawable.bg_user_chip);
-            }
-
-            holder.blockSwitch.setChecked(!app.isBlocked);
-
-            if (app.isBlocked) {
-                holder.status.setText("BLOCKED");
-                holder.status.setBackgroundResource(R.drawable.bg_blocked_chip);
-            } else {
-                holder.status.setText("ALLOWED");
-                holder.status.setBackgroundResource(R.drawable.bg_allowed_chip);
-            }
-
-            holder.blockSwitch.setOnCheckedChangeListener(null);
-            holder.blockSwitch.setChecked(!app.isBlocked);
-            holder.blockSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                blockAllInternet(app, !isChecked);
-            });
+            holder.bind(app);
         }
 
         @Override
@@ -398,6 +431,7 @@ public class NetworkFragment extends Fragment {
             ImageView appIcon;
             TextView appName, packageName, appType, status;
             SwitchCompat blockSwitch;
+            private AppInfo currentApp;
 
             public ViewHolder(@NonNull View itemView) {
                 super(itemView);
@@ -408,13 +442,48 @@ public class NetworkFragment extends Fragment {
                 status = itemView.findViewById(R.id.status);
                 blockSwitch = itemView.findViewById(R.id.blockSwitch);
             }
+
+            public void bind(AppInfo app) {
+                this.currentApp = app;
+
+                appName.setText(app.name);
+                appIcon.setImageDrawable(app.icon);
+                packageName.setText(app.packageName);
+
+                if (app.isSystemApp) {
+                    appType.setText("SYSTEM");
+                    appType.setBackgroundResource(R.drawable.bg_system_chip);
+                } else {
+                    appType.setText("USER");
+                    appType.setBackgroundResource(R.drawable.bg_user_chip);
+                }
+
+                blockSwitch.setOnCheckedChangeListener(null);
+                blockSwitch.setChecked(!app.isBlocked);
+
+                if (app.isBlocked) {
+                    status.setText("BLOCKED");
+                    status.setBackgroundResource(R.drawable.bg_blocked_chip);
+                } else {
+                    status.setText("ALLOWED");
+                    status.setBackgroundResource(R.drawable.bg_allowed_chip);
+                }
+
+                blockSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    if (currentApp != null) {
+                        blockAllInternet(currentApp, !isChecked);
+                    }
+                });
+            }
         }
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        loadAllApps();
+        if (isDataLoaded && !appList.isEmpty()) {
+            checkBlockStatusInBackground(new ArrayList<>(appList));
+        }
     }
 
     @Override
@@ -422,6 +491,9 @@ public class NetworkFragment extends Fragment {
         super.onDestroy();
         if (executorService != null && !executorService.isShutdown()) {
             executorService.shutdown();
+        }
+        if (toastRunnable != null) {
+            toastHandler.removeCallbacks(toastRunnable);
         }
     }
 
