@@ -6,18 +6,16 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -153,12 +151,18 @@ public class NetworkFragment extends Fragment {
     }
 
     private void filterApps() {
-        filteredList.clear();
+        if (appList.isEmpty()) {
+            updateEmptyState();
+            return;
+        }
 
+        filteredList.clear();
         Set<String> uniquePackages = new HashSet<>();
 
         for (AppInfo app : appList) {
-            if (uniquePackages.contains(app.packageName)) continue;
+            if (uniquePackages.contains(app.packageName)) {
+                continue;
+            }
             uniquePackages.add(app.packageName);
 
             boolean matchesSearch = currentQuery.isEmpty() ||
@@ -170,11 +174,13 @@ public class NetworkFragment extends Fragment {
                 case "ALL": matchesFilter = true; break;
                 case "USER": matchesFilter = !app.isSystemApp; break;
                 case "SYSTEM": matchesFilter = app.isSystemApp; break;
-                case "BLOCKED": matchesFilter = app.wifiBlocked || app.dataBlocked || app.backgroundBlocked || app.vpnBlocked; break;
-                case "ALLOWED": matchesFilter = !app.wifiBlocked && !app.dataBlocked && !app.backgroundBlocked && !app.vpnBlocked; break;
+                case "BLOCKED": matchesFilter = app.isBlocked; break;
+                case "ALLOWED": matchesFilter = !app.isBlocked; break;
             }
 
-            if (matchesSearch && matchesFilter) filteredList.add(app);
+            if (matchesSearch && matchesFilter) {
+                filteredList.add(app);
+            }
         }
 
         Collections.sort(filteredList, (o1, o2) -> o1.name.compareToIgnoreCase(o2.name));
@@ -183,13 +189,22 @@ public class NetworkFragment extends Fragment {
     }
 
     private void updateEmptyState() {
-        if (filteredList.isEmpty()) {
+        if (appList.isEmpty()) {
+            emptyText.setVisibility(View.VISIBLE);
+            emptyText.setText("Loading apps...");
+        } else if (filteredList.isEmpty()) {
             emptyText.setVisibility(View.VISIBLE);
             String message = "No apps found";
-            if (!currentQuery.isEmpty()) message += " for '" + currentQuery + "'";
-            if (!currentFilter.equals("ALL")) message += " in " + currentFilter.toLowerCase() + " apps";
+            if (!currentQuery.isEmpty()) {
+                message += " for '" + currentQuery + "'";
+            }
+            if (!currentFilter.equals("ALL")) {
+                message += " in " + currentFilter.toLowerCase() + " apps";
+            }
             emptyText.setText(message);
-        } else emptyText.setVisibility(View.GONE);
+        } else {
+            emptyText.setVisibility(View.GONE);
+        }
     }
 
     private void loadAllApps() {
@@ -203,7 +218,9 @@ public class NetworkFragment extends Fragment {
             List<ApplicationInfo> packages = pm.getInstalledApplications(PackageManager.GET_META_DATA);
 
             for (ApplicationInfo packageInfo : packages) {
-                if (packageSet.contains(packageInfo.packageName)) continue;
+                if (packageSet.contains(packageInfo.packageName)) {
+                    continue;
+                }
                 packageSet.add(packageInfo.packageName);
 
                 AppInfo appInfo = new AppInfo();
@@ -212,11 +229,7 @@ public class NetworkFragment extends Fragment {
                 appInfo.icon = packageInfo.loadIcon(pm);
                 appInfo.uid = packageInfo.uid;
                 appInfo.isSystemApp = (packageInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
-
-                appInfo.wifiBlocked = false;
-                appInfo.dataBlocked = false;
-                appInfo.backgroundBlocked = false;
-                appInfo.vpnBlocked = false;
+                appInfo.isBlocked = isAppBlocked(appInfo.uid, appInfo.packageName);
 
                 tempList.add(appInfo);
             }
@@ -228,90 +241,37 @@ public class NetworkFragment extends Fragment {
                 appList.addAll(tempList);
                 filterApps();
             });
-
-            checkRestrictionsInBackground(tempList);
         });
     }
 
-    private void checkRestrictionsInBackground(List<AppInfo> tempList) {
-        new Thread(() -> {
-            for (AppInfo app : tempList) {
-                app.wifiBlocked = isWifiBlocked(app.uid);
-                app.dataBlocked = isDataBlocked(app.uid);
-                app.backgroundBlocked = isBackgroundBlocked(app.packageName);
-                app.vpnBlocked = isVpnBlocked(app.uid);
-            }
-
-            mainHandler.post(() -> {
-                appList.clear();
-                appList.addAll(tempList);
-                filterApps();
-            });
-        }).start();
+    private boolean isAppBlocked(int uid, String packageName) {
+        boolean wifiBlocked = isWifiBlocked(uid);
+        boolean dataBlocked = isDataBlocked(uid);
+        boolean backgroundBlocked = isBackgroundBlocked(packageName);
+        boolean vpnBlocked = isVpnBlocked(uid);
+        return wifiBlocked || dataBlocked || backgroundBlocked || vpnBlocked;
     }
 
-    private void showOptionsMenu(View view, AppInfo app) {
-        PopupMenu popupMenu = new PopupMenu(requireContext(), view);
-        popupMenu.getMenuInflater().inflate(R.menu.network_options_menu, popupMenu.getMenu());
+    private void blockAllInternet(AppInfo app, boolean block) {
+        setWifiRestriction(app, block);
+        setDataRestriction(app, block);
+        setVpnRestriction(app, block);
+        setBackgroundRestriction(app, block);
 
-        MenuItem wifiItem = popupMenu.getMenu().findItem(R.id.menu_wifi);
-        MenuItem dataItem = popupMenu.getMenu().findItem(R.id.menu_data);
-        MenuItem backgroundItem = popupMenu.getMenu().findItem(R.id.menu_background);
-        MenuItem vpnItem = popupMenu.getMenu().findItem(R.id.menu_vpn);
+        app.isBlocked = block;
 
-        wifiItem.setChecked(!app.wifiBlocked);
-        dataItem.setChecked(!app.dataBlocked);
-        backgroundItem.setChecked(!app.backgroundBlocked);
-        vpnItem.setChecked(!app.vpnBlocked);
+        if (block) {
+            showToast("Internet completely blocked for " + app.name);
+        } else {
+            showToast("Internet allowed for " + app.name);
+        }
 
-        popupMenu.setOnMenuItemClickListener(item -> {
-            int itemId = item.getItemId();
-
-            if (itemId == R.id.menu_wifi) {
-                boolean newState = !item.isChecked();
-                setWifiRestriction(app, !newState);
-                item.setChecked(newState);
-                showToast(app.name + " WiFi " + (newState ? "allowed" : "blocked"));
-                return true;
-            } else if (itemId == R.id.menu_data) {
-                boolean newState = !item.isChecked();
-                setDataRestriction(app, !newState);
-                item.setChecked(newState);
-                showToast(app.name + " Mobile Data " + (newState ? "allowed" : "blocked"));
-                return true;
-            } else if (itemId == R.id.menu_background) {
-                boolean newState = !item.isChecked();
-                setBackgroundRestriction(app, !newState);
-                item.setChecked(newState);
-                showToast(app.name + " Background " + (newState ? "allowed" : "blocked"));
-                return true;
-            } else if (itemId == R.id.menu_vpn) {
-                boolean newState = !item.isChecked();
-                setVpnRestriction(app, !newState);
-                item.setChecked(newState);
-                showToast(app.name + " VPN " + (newState ? "allowed" : "blocked"));
-                return true;
-            } else if (itemId == R.id.menu_block_all) {
-                blockAllInternet(app, true);
-                showToast("All internet blocked for " + app.name);
-                popupMenu.dismiss();
-                return true;
-            } else if (itemId == R.id.menu_allow_all) {
-                blockAllInternet(app, false);
-                showToast("All internet allowed for " + app.name);
-                popupMenu.dismiss();
-                return true;
-            }
-            return false;
-        });
-
-        popupMenu.show();
+        mainHandler.post(this::filterApps);
     }
 
     private void showToast(String message) {
         mainHandler.post(() -> {
             Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
-            filterApps();
         });
     }
 
@@ -345,7 +305,6 @@ public class NetworkFragment extends Fragment {
             commands.add("iptables -D INPUT -m owner --uid-owner " + app.uid + " -j DROP");
         }
         Shell.SU.run(commands);
-        app.wifiBlocked = block;
     }
 
     private void setDataRestriction(AppInfo app, boolean block) {
@@ -358,7 +317,6 @@ public class NetworkFragment extends Fragment {
             commands.add("ip6tables -D INPUT -m owner --uid-owner " + app.uid + " -j DROP");
         }
         Shell.SU.run(commands);
-        app.dataBlocked = block;
     }
 
     private void setBackgroundRestriction(AppInfo app, boolean block) {
@@ -371,7 +329,6 @@ public class NetworkFragment extends Fragment {
             commands.add("cmd appops set " + app.packageName + " BACKGROUND_START allow");
         }
         Shell.SU.run(commands);
-        app.backgroundBlocked = block;
     }
 
     private void setVpnRestriction(AppInfo app, boolean block) {
@@ -382,21 +339,6 @@ public class NetworkFragment extends Fragment {
             commands.add("ip rule del from all uidrange " + app.uid + "-" + app.uid + " lookup main");
         }
         Shell.SU.run(commands);
-        app.vpnBlocked = block;
-    }
-
-    private void blockAllInternet(AppInfo app, boolean block) {
-        setWifiRestriction(app, block);
-        setDataRestriction(app, block);
-        setVpnRestriction(app, block);
-        setBackgroundRestriction(app, block);
-
-        app.wifiBlocked = block;
-        app.dataBlocked = block;
-        app.vpnBlocked = block;
-        app.backgroundBlocked = block;
-
-        mainHandler.post(this::filterApps);
     }
 
     private class NetworkAdapter extends RecyclerView.Adapter<NetworkAdapter.ViewHolder> {
@@ -410,7 +352,8 @@ public class NetworkFragment extends Fragment {
         @NonNull
         @Override
         public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_network_app, parent, false);
+            View view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_network_app, parent, false);
             return new ViewHolder(view);
         }
 
@@ -429,21 +372,21 @@ public class NetworkFragment extends Fragment {
                 holder.appType.setBackgroundResource(R.drawable.bg_user_chip);
             }
 
-            int blockedCount = 0;
-            if (app.wifiBlocked) blockedCount++;
-            if (app.dataBlocked) blockedCount++;
-            if (app.backgroundBlocked) blockedCount++;
-            if (app.vpnBlocked) blockedCount++;
+            holder.blockSwitch.setChecked(!app.isBlocked);
 
-            if (blockedCount > 0) {
-                holder.status.setText(blockedCount + " BLOCKED");
+            if (app.isBlocked) {
+                holder.status.setText("BLOCKED");
                 holder.status.setBackgroundResource(R.drawable.bg_blocked_chip);
             } else {
-                holder.status.setText("ALL ALLOWED");
+                holder.status.setText("ALLOWED");
                 holder.status.setBackgroundResource(R.drawable.bg_allowed_chip);
             }
 
-            holder.menuButton.setOnClickListener(v -> showOptionsMenu(v, app));
+            holder.blockSwitch.setOnCheckedChangeListener(null);
+            holder.blockSwitch.setChecked(!app.isBlocked);
+            holder.blockSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                blockAllInternet(app, !isChecked);
+            });
         }
 
         @Override
@@ -454,7 +397,7 @@ public class NetworkFragment extends Fragment {
         public class ViewHolder extends RecyclerView.ViewHolder {
             ImageView appIcon;
             TextView appName, packageName, appType, status;
-            ImageButton menuButton;
+            SwitchCompat blockSwitch;
 
             public ViewHolder(@NonNull View itemView) {
                 super(itemView);
@@ -463,7 +406,7 @@ public class NetworkFragment extends Fragment {
                 packageName = itemView.findViewById(R.id.packageName);
                 appType = itemView.findViewById(R.id.appType);
                 status = itemView.findViewById(R.id.status);
-                menuButton = itemView.findViewById(R.id.menuButton);
+                blockSwitch = itemView.findViewById(R.id.blockSwitch);
             }
         }
     }
@@ -488,9 +431,6 @@ public class NetworkFragment extends Fragment {
         int uid;
         boolean isSystemApp;
         android.graphics.drawable.Drawable icon;
-        boolean wifiBlocked;
-        boolean dataBlocked;
-        boolean backgroundBlocked;
-        boolean vpnBlocked;
+        boolean isBlocked;
     }
 }
